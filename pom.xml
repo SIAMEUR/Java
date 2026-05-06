@@ -7,26 +7,20 @@
     <groupId>org.example</groupId>
     <artifactId>ProjetJAVA</artifactId>
     <version>1.0-SNAPSHOT</version>
-    <packaging>pom</packaging>
-    <name>Fabrique de Lunettes - Parent</name>
-
-    <modules>
-        <module>usine</module>
-        <module>serveur</module>
-        <module>usine</module>
-        <module>serveur</module>
-    </modules>
 
     <properties>
         <maven.compiler.source>24</maven.compiler.source>
         <maven.compiler.target>24</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <paho.version>1.2.5</paho.version>
-        <slf4j.version>2.0.9</slf4j.version>
-        <logback.version>1.4.11</logback.version>
     </properties>
+    <dependencies>
 
-    <!-- Dépôt GitHub du prof pour récupérer fabricateur -->
+        <dependency>
+            <groupId>bernard-flou</groupId>
+            <artifactId>fabricateur</artifactId>
+            <version>0.0.1</version>
+        </dependency>
+    </dependencies>
     <repositories>
         <repository>
             <id>github-bernard</id>
@@ -34,33 +28,4 @@
         </repository>
     </repositories>
 
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>bernard-flou</groupId>
-                <artifactId>fabricateur</artifactId>
-                <version>0.0.1</version>
-            </dependency>
-            <dependency>
-                <groupId>org.eclipse.paho</groupId>
-                <artifactId>org.eclipse.paho.client.mqttv3</artifactId>
-                <version>${paho.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.slf4j</groupId>
-                <artifactId>slf4j-api</artifactId>
-                <version>${slf4j.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>ch.qos.logback</groupId>
-                <artifactId>logback-classic</artifactId>
-                <version>${logback.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.example</groupId>
-                <artifactId>usine</artifactId>
-                <version>1.0-SNAPSHOT</version>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
 </project>
