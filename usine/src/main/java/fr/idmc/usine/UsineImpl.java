@@ -58,7 +58,6 @@ public class UsineImpl implements Usine {
         return resultat;
     }
 
-
     private void boucleCoordinateur() {
         logger.info("Coordinateur démarré.");
 
@@ -103,8 +102,55 @@ public class UsineImpl implements Usine {
         }
     }
 
-    // TODO
-    private void executerCycle(List<Slot> cycle) {}
+    /**
+     * Execute un cycle de fabrication :
+     * configure le Fabricateur, lance un Callable par lunette,
+     * attend les Future et distribue les lunettes à chaque demande
+     * @param cycle la liste des slots à traiter dans ce cycle
+     */
+    private void executerCycle(List<Slot> cycle) {
+        int taille = cycle.size();
+        logger.info("Démarrage d'un cycle : {} lunette(s).", taille);
+
+        TypeLunette[] types = cycle.stream()
+                .map(Slot::getType)
+                .toArray(TypeLunette[]::new);
+        try {
+            fabricateur.configurer(types);
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            logger.error("Erreur lors de configurer() : {}", e.getMessage());
+            cycle.stream().map(Slot::getDemande).distinct()
+                    .forEach(d -> d.signalerErreur(new ProductionException("Erreur configurer()", e)));
+            return;
+        }
+
+        List<Future<LunetteEtDemande>> futures = new ArrayList<>();
+        for (Slot slot : cycle) {
+            Callable<LunetteEtDemande> tache = () -> {
+                Lunette lunette = fabricateur.fabriquer(slot.getType());
+                return new LunetteEtDemande(lunette, slot.getDemande());
+            };
+            futures.add(pool.submit(tache));
+        }
+
+        for (Future<LunetteEtDemande> future : futures) {
+            try {
+                LunetteEtDemande resultat = future.get();
+                resultat.demande().ajouterLunette(resultat.lunette());
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                logger.error("Cycle interrompu.");
+                return;
+            } catch (ExecutionException e) {
+                logger.error("Erreur lors de fabriquer() : {}", e.getCause().getMessage());
+                cycle.stream().map(Slot::getDemande).distinct()
+                        .forEach(d -> d.signalerErreur(
+                                new ProductionException("Erreur fabriquer()", e.getCause())));
+                return;
+            }
+        }
+        logger.info("Cycle terminé : {} lunettes produites.", taille);
+    }
 
     /**
      * extriare que les types dans chaque map (type:quantité)
