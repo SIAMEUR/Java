@@ -111,7 +111,7 @@ public class UsineImpl implements Usine {
             }
         }
         /**
-         * @param e
+         * @param e l'exception
          */
         synchronized void signalerErreur(ProductionException e) {
             this.erreur  = e;
@@ -120,7 +120,7 @@ public class UsineImpl implements Usine {
         }
         /**
          * @return la liste des lunettes produites
-         * @throws ProductionException
+         * @throws ProductionException ProductionException
          */
         synchronized List<Lunette> attendreResultat() {
             while (!termine) {
