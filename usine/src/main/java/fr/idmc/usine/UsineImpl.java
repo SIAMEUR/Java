@@ -19,6 +19,7 @@ public class UsineImpl implements Usine {
     private final Fabricateur fabricateur;
     private final int capacite;
     private final ExecutorService pool;
+    private final List<Demande> fileAttente = new ArrayList<>();
 
     public UsineImpl(Fabricateur fabricateur) {
         this.fabricateur = fabricateur;
@@ -27,17 +28,32 @@ public class UsineImpl implements Usine {
         logger.info("Usine démarré avec capacite : {}", capacite);
     }
 
+    /**
+     * @param typesLunettes la commande sous forme de Map
+     * @return la liste des lunettes produites
+     */
     @Override
     public List<Lunette> produire(Map<TypeLunette, Integer> typesLunettes) {
-        // TODO
-        return new ArrayList<>();
+        List<TypeLunette> listeTypes = aplatir(typesLunettes);
+        logger.info("Nouvelle commande reçue : {} lunettes  {}", listeTypes.size(), typesLunettes);
+
+        Demande demande = new Demande(listeTypes);
+
+        synchronized (fileAttente) {
+            fileAttente.add(demande);
+            fileAttente.notifyAll();
+        }
+
+        List<Lunette> resultat = demande.attendreResultat();
+        logger.info("Commande terminé :{} lunettes reçues.", resultat.size());
+        return resultat;
     }
 
     /**
      * extriare que les types dans chaque map (type:quantité)
      * Exemple : {BlaBlaBla:2,Bananaaaa:1} en {BlaBlaBla,Bananaaaa}
      * @param map la commande sous forme de Map
-     * @return la liste aplatie
+     * @return la liste
      */
     private List<TypeLunette> aplatir(Map<TypeLunette, Integer> map) {
         List<TypeLunette> liste = new ArrayList<>();
@@ -64,6 +80,7 @@ public class UsineImpl implements Usine {
         }
         return resultat;
     }
+
     //Association entre un type de lunette à produire et la demande cliente qui l'a soumis
     //c'est notre façon pour comment savoir à qui appartient la commande
     private static class Slot {
@@ -78,6 +95,7 @@ public class UsineImpl implements Usine {
         TypeLunette getType()    { return type; }
         Demande     getDemande() { return demande; }
     }
+
     //pour savoir à qui la commande
     /**
      * @param lunette
@@ -100,6 +118,7 @@ public class UsineImpl implements Usine {
         }
 
         List<TypeLunette> getTypes() { return types; }
+
         /**
          * @param lunette la lunette peoduite
          */
@@ -110,6 +129,7 @@ public class UsineImpl implements Usine {
                 notifyAll();
             }
         }
+
         /**
          * @param e l'exception
          */
@@ -118,6 +138,7 @@ public class UsineImpl implements Usine {
             this.termine = true;
             notifyAll();
         }
+
         /**
          * @return la liste des lunettes produites
          * @throws ProductionException ProductionException
@@ -135,5 +156,4 @@ public class UsineImpl implements Usine {
             return new ArrayList<>(lunettesRecues);
         }
     }
-
 }
