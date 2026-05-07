@@ -50,7 +50,7 @@
                     </descriptorRefs>
                     <archive>
                         <manifest>
-                            <mainClass>fr.idmc.backend.ServeurApplication</mainClass>
+                            <mainClass>fr.idmc.backend.server.ServeurApplication</mainClass>
                         </manifest>
                     </archive>
                     <finalName>serveur-fabrique</finalName>
