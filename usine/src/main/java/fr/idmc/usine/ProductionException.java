@@ -1,8 +1,6 @@
 package fr.idmc.usine;
 
-/**
- * Exception levée lorsqu'une erreur survient pendant la fabrication des lunettes.
- */
+/**Exception levée lorsqu'une erreur survient pendant la fabrication des lunettes.*/
 public class ProductionException extends RuntimeException {
 
     /**
@@ -14,7 +12,7 @@ public class ProductionException extends RuntimeException {
 
     /**
      * @param message description de l'erreur
-     * @param cause   exception d'origine
+     * @param cause  exception d'origine
      */
     public ProductionException(String message, Throwable cause) {
         super(message, cause);

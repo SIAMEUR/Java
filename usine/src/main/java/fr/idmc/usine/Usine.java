@@ -11,7 +11,7 @@ import java.util.Map;
  */
 public interface Usine {
     /**
-     * @param typesLunettes map associant chaque type de lunette à sa quantité (0–9)
+     * @param typesLunettes map associant chaque type de lunette à sa quantité
      * @return la liste des lunettes fabriquées, chacune avec son type et son numéro de série
      * @throws ProductionException si une erreur survient pendant la fabrication
      */
