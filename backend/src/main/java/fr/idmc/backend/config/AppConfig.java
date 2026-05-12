@@ -20,6 +20,6 @@ public class AppConfig {
         return "lunettes/verification/result/" + clientId;
     }
 
-    // Pool de threads de l'Usine
+    // nombre de threads de l'Usine
     public static final int POOL_SIZE = 10;
 }
