@@ -1,38 +1,33 @@
 package fr.idmc.backend.server;
 
-import bernard_flou.Fabricateur;
-import com.sun.source.tree.TryTree;
 import fr.idmc.backend.serialization.LunettesException;
 import fr.idmc.backend.serialization.Message;
 import bernard_flou.Fabricateur.TypeLunette;
 
-import java.util.Map;
-import java.util.Set;
+import java.util.List;
 
 public class ValidateurCommande {
 
-    public void valider(Message msg) throws Exception {
+    public void valider(Message msg) throws LunettesException {
 
-
+        // clientId obligatoire
         if (msg.getClientId() == null || msg.getClientId().isBlank())
-            throw  LunettesException.clientIdManquant();
+            throw LunettesException.clientIdManquant();
 
-
-
-
-        //verification des quantity et des types
-        for (Map.Entry<Fabricateur.TypeLunette, Integer> entry :
-                msg.getLunettes().entrySet()) {
-
-            try{
-                TypeLunette type = entry.getKey();
-            }catch (Exception e){
-                throw LunettesException.typeInconnu(e.getMessage());
+        List<Message.LunettesItem> lunettes = msg.getLunettes();
+        if (lunettes == null || lunettes.isEmpty())
+            throw new LunettesException("LUNETTES_MANQUANTES",
+                    "La liste de lunettes est vide ou absente");
+        for (Message.LunettesItem item : lunettes) {
+            try {
+                TypeLunette.valueOf(item.getType().toUpperCase());
+            } catch (IllegalArgumentException | NullPointerException e) {
+                throw LunettesException.typeInconnu(item.getType());
             }
-            int quantity = entry.getValue();
-            if (quantity <= 0 || quantity > 100) {
-                throw LunettesException.quantiteInvalide(quantity);
-            }
+
+            // quantity entre 1 et 100
+            if (item.getQuantity() <= 0 || item.getQuantity() > 100)
+                throw LunettesException.quantiteInvalide(item.getQuantity());
         }
     }
 }

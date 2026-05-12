@@ -35,7 +35,12 @@ public class Commande {
         return new Commande(id, msg.getClientId(), map);
     }
 
-    public String getCommandeId()                       { return commandeId; }
-    public String getClientId()                         { return clientId; }
-    public Map<TypeLunette, Integer> getLunettes()      { return lunettes; }
+    public String getCommandeId() {
+        return commandeId; }
+
+    public String getClientId(){
+        return clientId; }
+
+    public Map<TypeLunette, Integer> getLunettes(){
+        return lunettes; }
 }

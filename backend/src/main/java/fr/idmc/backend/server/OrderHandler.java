@@ -1,36 +1,34 @@
 package fr.idmc.backend.server;
 
-
+import bernard_flou.Fabricateur.Lunette;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import fr.idmc.backend.serialization.LunettesException;
 import fr.idmc.backend.serialization.Message;
-import fr.idmc.factory.Usine;
-
-
-
+import fr.idmc.usine.Usine;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class OrderHandler {
 
-     private static final Logger log = LoggerFactory.getLogger(OrderHandler.class);
+    private static final Logger log = LoggerFactory.getLogger(OrderHandler.class);
 
     private final Usine usine;
     private final ValidateurCommande validateur;
     private final ObjectMapper mapper = new ObjectMapper();
 
-    // Stockage thread-safe des serials pour vérification
     private final Set<String> tousLesSerials =
             Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     public OrderHandler(Usine usine, ValidateurCommande validateur) {
-        this.usine     = usine;
+        this.usine      = usine;
         this.validateur = validateur;
     }
 
@@ -40,7 +38,7 @@ public class OrderHandler {
 
     public CompletableFuture<Message> traiterCommande(String payloadJson) {
 
-        // 1. Parse JSON → Message
+        // JSON au Message
         Message entrant;
         try {
             entrant = mapper.readValue(payloadJson, Message.class);
@@ -51,26 +49,41 @@ public class OrderHandler {
             );
         }
 
-        // 2. Validation
+        // Validation
         try {
             validateur.valider(entrant);
         } catch (Exception e) {
-            log.warn("Commande invalide [{}] : {}", 400, e.getMessage());
+            log.warn("Commande invalide : {}", e.getMessage());
             return CompletableFuture.completedFuture(
                     creerErreur(entrant.getClientId(), entrant.getCommandeId(), e.getMessage())
             );
         }
 
-        // 3. Conversion Message → Commande interne
-        Commande commande = Commande.depuisMessage(entrant);
+        // 3. message au commande
+        Commande commande;
+        try {
+            commande = Commande.depuisMessage(entrant);
+        } catch (IllegalArgumentException e) {
+            log.warn("Type de lunette inconnu : {}", e.getMessage());
+            return CompletableFuture.completedFuture(
+                    creerErreur(entrant.getClientId(), entrant.getCommandeId(),
+                            "Type inconnu : " + e.getMessage())
+            );
+        }
 
-        // 4. Envoi à l'Usine (async)
-        return usine.traiterCommande(commande)
-                .thenApply(serials -> {
+        // appele produire en thread separe
+        return CompletableFuture.supplyAsync(() ->
+                        usine.produire(commande.getLunettes())
+                )
+                .thenApply(lunettes -> {
+                    // Extraction des numéros de série depuis chaque Lunette
+                    List<String> serials = lunettes.stream()
+                            .map(lunette -> lunette.serial)
+                            .collect(Collectors.toList());
+
                     tousLesSerials.addAll(serials);
 
                     Message rep = new Message();
-                    rep.setType("LIVRAISON");
                     rep.setClientId(commande.getClientId());
                     rep.setCommandeId(commande.getCommandeId());
                     rep.setNumerosSerie(serials);
@@ -78,11 +91,13 @@ public class OrderHandler {
                     return rep;
                 })
                 .exceptionally(ex -> {
-                    log.error("Fabrication échouée", ex);
+                    Throwable cause = ex.getCause() != null ? ex.getCause() : ex;
+                    log.error("Fabrication échouée pour {} : {}",
+                            commande.getCommandeId(), cause.getMessage());
                     return creerErreur(
                             commande.getClientId(),
                             commande.getCommandeId(),
-                            "Fabrication échouée : " + ex.getMessage()
+                            "Fabrication échouée : " + cause.getMessage()
                     );
                 });
     }
@@ -97,7 +112,6 @@ public class OrderHandler {
             boolean valide  = tousLesSerials.contains(entrant.getNumeroSerie());
 
             Message rep = new Message();
-            rep.setType("VERIFICATION_RESULT");
             rep.setClientId(entrant.getClientId());
             rep.setNumeroSerie(entrant.getNumeroSerie());
             rep.setValide(valide);
@@ -116,7 +130,6 @@ public class OrderHandler {
 
     private Message creerErreur(String clientId, String commandeId, String texte) {
         Message m = new Message();
-        m.setType("ERREUR");
         m.setClientId(clientId);
         m.setCommandeId(commandeId);
         m.setStatut("ERREUR");
