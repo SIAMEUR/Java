@@ -110,7 +110,7 @@ public class OrderHandler {
     // le TypeLunette si valide, null sinon
     // ─────────────────────────────────────
 
-    /*public Message traiterVerification(String payloadJson) {
+    public Message traiterVerification(String payloadJson) {
         try {
             Message entrant = mapper.readValue(payloadJson, Message.class);
             String numeroSerie = entrant.getNumeroSerie();
@@ -131,8 +131,6 @@ public class OrderHandler {
             rep.setStatut("OK");
 
             if (valide && connuLocalement) {
-                // On renvoie aussi le type pour que le client sache
-                // de quel modèle il s'agit
                 rep.setTypeLunette(type.name());
             }
 
@@ -142,11 +140,7 @@ public class OrderHandler {
             log.error("Erreur vérification", e);
             return creerErreur(null, null, "Vérification impossible : " + e.getMessage());
         }
-    }*/
-
-    // ─────────────────────────────────────
-    // Helper
-    // ─────────────────────────────────────
+    }
 
     private Message creerErreur(String clientId, String commandeId, String texte) {
         Message m = new Message();
