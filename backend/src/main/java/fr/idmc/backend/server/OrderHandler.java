@@ -6,7 +6,7 @@ import bernard_flou.Fabricateur.TypeLunette;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.idmc.backend.serialization.Message;
-import fr.idmc.usine.Usine;
+import fr.idmc.factory.Usine;
 
 import java.util.Collections;
 import java.util.List;
