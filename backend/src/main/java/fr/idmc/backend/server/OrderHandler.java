@@ -1,6 +1,8 @@
 package fr.idmc.backend.server;
 
+import bernard_flou.Fabricateur;
 import bernard_flou.Fabricateur.Lunette;
+import bernard_flou.Fabricateur.TypeLunette;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.idmc.backend.serialization.Message;
@@ -24,6 +26,7 @@ public class OrderHandler {
     private final ValidateurCommande validateur;
     private final ObjectMapper mapper = new ObjectMapper();
 
+    // Stockage thread-safe des serials produits
     private final Set<String> tousLesSerials =
             Collections.newSetFromMap(new ConcurrentHashMap<>());
 
@@ -38,7 +41,7 @@ public class OrderHandler {
 
     public CompletableFuture<Message> traiterCommande(String payloadJson) {
 
-        // JSON au Message
+        // 1. Parse JSON → Message
         Message entrant;
         try {
             entrant = mapper.readValue(payloadJson, Message.class);
@@ -49,7 +52,7 @@ public class OrderHandler {
             );
         }
 
-        // Validation
+        // 2. Validation
         try {
             validateur.valider(entrant);
         } catch (Exception e) {
@@ -59,7 +62,7 @@ public class OrderHandler {
             );
         }
 
-        // 3. message au commande
+        // 3. Message → Commande (List<LunettesItem> → Map<TypeLunette, Integer>)
         Commande commande;
         try {
             commande = Commande.depuisMessage(entrant);
@@ -71,12 +74,11 @@ public class OrderHandler {
             );
         }
 
-        // appele produire en thread separe
+        // appeler produire thread séparé
         return CompletableFuture.supplyAsync(() ->
-                        usine.produire(commande.getLunettes())
+                        usine.produire(commande.getLunettes())  // List<Lunette>
                 )
                 .thenApply(lunettes -> {
-                    // Extraction des numéros de série depuis chaque Lunette
                     List<String> serials = lunettes.stream()
                             .map(lunette -> lunette.serial)
                             .collect(Collectors.toList());
@@ -104,25 +106,43 @@ public class OrderHandler {
 
     // ─────────────────────────────────────
     // Vérification d'un numéro de série
+    // Utilise Fabricateur.validateSerial() qui retourne
+    // le TypeLunette si valide, null sinon
     // ─────────────────────────────────────
 
-    public Message traiterVerification(String payloadJson) {
+    /*public Message traiterVerification(String payloadJson) {
         try {
             Message entrant = mapper.readValue(payloadJson, Message.class);
-            boolean valide  = tousLesSerials.contains(entrant.getNumeroSerie());
+            String numeroSerie = entrant.getNumeroSerie();
+
+            // validateSerial() vérifie le format ET le CRC du serial
+            // retourne TypeLunette si valide, null sinon
+            TypeLunette type = Fabricateur.validateSerial(numeroSerie);
+            boolean valide   = type != null;
+
+            // Double vérification : le serial doit aussi avoir été produit
+            // par cette usine (pas un serial forgé extérieur valide par hasard)
+            boolean connuLocalement = tousLesSerials.contains(numeroSerie);
 
             Message rep = new Message();
             rep.setClientId(entrant.getClientId());
-            rep.setNumeroSerie(entrant.getNumeroSerie());
-            rep.setValide(valide);
+            rep.setNumeroSerie(numeroSerie);
+            rep.setValide(valide && connuLocalement);
             rep.setStatut("OK");
+
+            if (valide && connuLocalement) {
+                // On renvoie aussi le type pour que le client sache
+                // de quel modèle il s'agit
+                rep.setTypeLunette(type.name());
+            }
+
             return rep;
 
         } catch (Exception e) {
             log.error("Erreur vérification", e);
             return creerErreur(null, null, "Vérification impossible : " + e.getMessage());
         }
-    }
+    }*/
 
     // ─────────────────────────────────────
     // Helper

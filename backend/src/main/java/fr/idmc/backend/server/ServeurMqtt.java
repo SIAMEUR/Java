@@ -52,10 +52,7 @@ public class ServeurMqtt implements MqttCallback {
         }
     }
 
-    // ─────────────────────────────────────
-    // Réception et routage
-    // ─────────────────────────────────────
-
+//--------------------------routage
     @Override
     public void messageArrived(String topic, MqttMessage message) {
         String payload = new String(message.getPayload(), StandardCharsets.UTF_8);
@@ -65,8 +62,7 @@ public class ServeurMqtt implements MqttCallback {
             case AppConfig.TOPIC_COMMANDES ->
                     orderHandler.traiterCommande(payload)
                             .thenAccept(rep -> {
-                                // Sécurité : si clientId null (JSON invalide),
-                                // on ne peut pas router la réponse
+                                // si clientId null on ne peut pas router la réponse
                                 if (rep.getClientId() == null) {
                                     log.warn("Réponse sans clientId, publication impossible.");
                                     return;
@@ -74,14 +70,14 @@ public class ServeurMqtt implements MqttCallback {
                                 publier(AppConfig.topicLivraison(rep.getClientId()), rep);
                             });
 
-            case AppConfig.TOPIC_VERIFICATION -> {
+            /*case AppConfig.TOPIC_VERIFICATION -> {
                 Message rep = orderHandler.traiterVerification(payload);
                 if (rep.getClientId() == null) {
                     log.warn("Vérification sans clientId, publication impossible.");
                     return;
                 }
                 publier(AppConfig.topicVerificationResult(rep.getClientId()), rep);
-            }
+            }*/
 
             default -> log.warn("Topic non géré : {}", topic);
         }
