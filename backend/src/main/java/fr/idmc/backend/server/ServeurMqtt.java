@@ -1,8 +1,5 @@
 package fr.idmc.backend.server;
 
-import fr.idmc.usine.Usine;
-
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import fr.idmc.backend.config.AppConfig;
 import fr.idmc.backend.serialization.Message;
@@ -11,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 public class ServeurMqtt implements MqttCallback {
 
@@ -22,11 +20,10 @@ public class ServeurMqtt implements MqttCallback {
 
     public ServeurMqtt(OrderHandler orderHandler) {
         this.orderHandler = orderHandler;
+        this.orderHandler.setSerialsUpdated(this::publierListeSerials);
     }
 
-    // ─────────────────────────────────────
-    // Démarrage
-    // ─────────────────────────────────────
+
 
     public void demarrer() throws MqttException {
         client = new MqttClient(AppConfig.BROKER_URL, AppConfig.CLIENT_ID);
@@ -43,6 +40,9 @@ public class ServeurMqtt implements MqttCallback {
         client.subscribe(AppConfig.TOPIC_COMMANDES,    AppConfig.QOS);
         client.subscribe(AppConfig.TOPIC_VERIFICATION, AppConfig.QOS);
         log.info("Abonné aux topics commandes et vérification");
+
+        // Publication de l'état initial (liste vide au démarrage)
+        publierListeSerials(orderHandler.getTousLesSerials());
     }
 
     public void arreter() throws MqttException {
@@ -52,7 +52,8 @@ public class ServeurMqtt implements MqttCallback {
         }
     }
 
-//--------------------------routage
+    //Réception et routage
+
     @Override
     public void messageArrived(String topic, MqttMessage message) {
         String payload = new String(message.getPayload(), StandardCharsets.UTF_8);
@@ -62,12 +63,11 @@ public class ServeurMqtt implements MqttCallback {
             case AppConfig.TOPIC_COMMANDES ->
                     orderHandler.traiterCommande(payload)
                             .thenAccept(rep -> {
-                                // si clientId null on ne peut pas router la réponse
                                 if (rep.getClientId() == null) {
                                     log.warn("Réponse sans clientId, publication impossible.");
                                     return;
                                 }
-                                publier(AppConfig.topicLivraison(rep.getClientId()), rep);
+                                publier(AppConfig.topicLivraison(rep.getClientId()), rep, false);
                             });
 
             case AppConfig.TOPIC_VERIFICATION -> {
@@ -76,22 +76,42 @@ public class ServeurMqtt implements MqttCallback {
                     log.warn("Vérification sans clientId, publication impossible.");
                     return;
                 }
-                publier(AppConfig.topicVerificationResult(rep.getClientId()), rep);
+                publier(AppConfig.topicVerificationResult(rep.getClientId()), rep, false);
             }
 
             default -> log.warn("Topic non géré : {}", topic);
         }
     }
 
-    // ─────────────────────────────────────
-    // Publication
-    // ─────────────────────────────────────
 
-    private void publier(String topic, Object objet) {
+    private void publierListeSerials(List<String> serials) {
+        try {
+            java.util.Map<String, Object> payload = java.util.Map.of(
+                    "serials", serials,
+                    "total",   serials.size()
+            );
+            byte[] json = mapper.writeValueAsBytes(payload);
+
+            MqttMessage msg = new MqttMessage(json);
+            msg.setQos(AppConfig.QOS);
+            msg.setRetained(true);  // retained : dernier message conservé par le broker
+            client.publish(AppConfig.TOPIC_FABRIQUEES, msg);
+
+            log.info("Liste serials publiée sur [{}] : {} serial(s)",
+                    AppConfig.TOPIC_FABRIQUEES, serials.size());
+        } catch (Exception e) {
+            log.error("Erreur publication liste serials", e);
+        }
+    }
+
+
+
+    private void publier(String topic, Object objet, boolean retained) {
         try {
             byte[] json = mapper.writeValueAsBytes(objet);
             MqttMessage msg = new MqttMessage(json);
             msg.setQos(AppConfig.QOS);
+            msg.setRetained(retained);
             client.publish(topic, msg);
             log.debug("Publié sur [{}]", topic);
         } catch (Exception e) {
@@ -99,13 +119,9 @@ public class ServeurMqtt implements MqttCallback {
         }
     }
 
-    // ─────────────────────────────────────
-    // Callbacks MQTT
-    // ─────────────────────────────────────
-
     @Override
     public void connectionLost(Throwable cause) {
-        log.warn("Connexion perdue : {}. Reconnexion auto en cours...", cause.getMessage());
+        log.warn("Connexion perdue : {}. Reconnexion auto...", cause.getMessage());
     }
 
     @Override
