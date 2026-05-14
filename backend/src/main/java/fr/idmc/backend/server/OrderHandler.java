@@ -41,7 +41,7 @@ public class OrderHandler {
 
     public CompletableFuture<Message> traiterCommande(String payloadJson) {
 
-        // 1. Parse JSON → Message
+        // Parse JSON → Message
         Message entrant;
         try {
             entrant = mapper.readValue(payloadJson, Message.class);
@@ -52,7 +52,7 @@ public class OrderHandler {
             );
         }
 
-        // 2. Validation
+        // Validation
         try {
             validateur.valider(entrant);
         } catch (Exception e) {
@@ -62,7 +62,7 @@ public class OrderHandler {
             );
         }
 
-        // 3. Message → Commande (List<LunettesItem> → Map<TypeLunette, Integer>)
+        // Message → Commande (List<LunettesItem> → Map<TypeLunette, Integer>)
         Commande commande;
         try {
             commande = Commande.depuisMessage(entrant);
@@ -115,13 +115,10 @@ public class OrderHandler {
             Message entrant = mapper.readValue(payloadJson, Message.class);
             String numeroSerie = entrant.getNumeroSerie();
 
-            // validateSerial() vérifie le format ET le CRC du serial
-            // retourne TypeLunette si valide, null sinon
             TypeLunette type = Fabricateur.validateSerial(numeroSerie);
             boolean valide   = type != null;
 
             // Double vérification : le serial doit aussi avoir été produit
-            // par cette usine (pas un serial forgé extérieur valide par hasard)
             boolean connuLocalement = tousLesSerials.contains(numeroSerie);
 
             Message rep = new Message();
