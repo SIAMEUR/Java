@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+
+<VBox alignment="CENTER" spacing="20" styleClass="root-accueil"
+      xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml">
+
+    <Label text="Lunettes connectées" styleClass="titre"/>
+    <Label text="Commandez vos lunettes en quelques clics" styleClass="sous-titre"/>
+
+    <Button text="Commander" styleClass="btn-principal"/>
+    <Button text="Mes lunettes" styleClass="btn-secondaire"/>
+    <Button text="Vérifier un numéro" styleClass="btn-secondaire"/>
+
+</VBox>
