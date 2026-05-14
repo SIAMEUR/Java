@@ -70,14 +70,14 @@ public class ServeurMqtt implements MqttCallback {
                                 publier(AppConfig.topicLivraison(rep.getClientId()), rep);
                             });
 
-            /*case AppConfig.TOPIC_VERIFICATION -> {
+            case AppConfig.TOPIC_VERIFICATION -> {
                 Message rep = orderHandler.traiterVerification(payload);
                 if (rep.getClientId() == null) {
                     log.warn("Vérification sans clientId, publication impossible.");
                     return;
                 }
                 publier(AppConfig.topicVerificationResult(rep.getClientId()), rep);
-            }*/
+            }
 
             default -> log.warn("Topic non géré : {}", topic);
         }

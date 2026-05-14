@@ -34,14 +34,14 @@ public class ServeurApplication {
 
         //stop
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            log.info("Arrêt du serveur en cours...");
+            log.info("Arret du serveur en cours...");
             try {
                 serveur.arreter();
-                log.info("Serveur arrêté proprement.");
+                log.info("Serveur arreté proprement.");
             } catch (Exception e) {
                 log.error("Erreur lors de l'arrêt : {}", e.getMessage());
             }
-        }, "shutdown-hook"));
+        }, "shutdown"));
 
         Thread.currentThread().join();
     }
