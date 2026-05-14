@@ -1,7 +1,6 @@
 package fr.idmc.backend.server;
 
 import bernard_flou.Fabricateur;
-import bernard_flou.Fabricateur.Lunette;
 import bernard_flou.Fabricateur.TypeLunette;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -13,6 +12,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -26,22 +26,27 @@ public class OrderHandler {
     private final ValidateurCommande validateur;
     private final ObjectMapper mapper = new ObjectMapper();
 
+
     // Stockage thread-safe des serials produits
     private final Set<String> tousLesSerials =
             Collections.newSetFromMap(new ConcurrentHashMap<>());
+    //les liste a jour
+    private Consumer<List<String>> serialsUpdated;
 
     public OrderHandler(Usine usine, ValidateurCommande validateur) {
         this.usine      = usine;
         this.validateur = validateur;
     }
 
-    // ─────────────────────────────────────
+    public void setSerialsUpdated(Consumer<List<String>> callback) {
+        this.serialsUpdated = callback;
+    }
+
     // Traitement d'une commande
-    // ─────────────────────────────────────
 
     public CompletableFuture<Message> traiterCommande(String payloadJson) {
 
-        // Parse JSON → Message
+        // 1. Parse JSON → Message
         Message entrant;
         try {
             entrant = mapper.readValue(payloadJson, Message.class);
@@ -52,7 +57,7 @@ public class OrderHandler {
             );
         }
 
-        // Validation
+        // 2. Validation
         try {
             validateur.valider(entrant);
         } catch (Exception e) {
@@ -62,7 +67,7 @@ public class OrderHandler {
             );
         }
 
-        // Message → Commande (List<LunettesItem> → Map<TypeLunette, Integer>)
+        // 3. Message → Commande interne
         Commande commande;
         try {
             commande = Commande.depuisMessage(entrant);
@@ -74,21 +79,29 @@ public class OrderHandler {
             );
         }
 
-        // appeler produire thread séparé
+        // 4. usine.produire() est BLOQUANTE → thread séparé
         return CompletableFuture.supplyAsync(() ->
-                        usine.produire(commande.getLunettes())  // List<Lunette>
+                        usine.produire(commande.getLunettes())
                 )
                 .thenApply(lunettes -> {
-                    List<String> serials = lunettes.stream()
+                    List<String> nouveauxSerials = lunettes.stream()
                             .map(lunette -> lunette.serial)
                             .collect(Collectors.toList());
 
-                    tousLesSerials.addAll(serials);
+
+                    tousLesSerials.addAll(nouveauxSerials);
+
+                    if (serialsUpdated != null) {
+                        serialsUpdated.accept(List.copyOf(tousLesSerials));
+                    }
+
+                    log.info("{} nouveaux serials ajoutés. Total : {}",
+                            nouveauxSerials.size(), tousLesSerials.size());
 
                     Message rep = new Message();
                     rep.setClientId(commande.getClientId());
                     rep.setCommandeId(commande.getCommandeId());
-                    rep.setNumerosSerie(serials);
+                    rep.setNumerosSerie(nouveauxSerials);  // serials de CETTE commande
                     rep.setStatut("OK");
                     return rep;
                 })
@@ -106,19 +119,15 @@ public class OrderHandler {
 
     // ─────────────────────────────────────
     // Vérification d'un numéro de série
-    // Utilise Fabricateur.validateSerial() qui retourne
-    // le TypeLunette si valide, null sinon
     // ─────────────────────────────────────
 
     public Message traiterVerification(String payloadJson) {
         try {
-            Message entrant = mapper.readValue(payloadJson, Message.class);
+            Message entrant   = mapper.readValue(payloadJson, Message.class);
             String numeroSerie = entrant.getNumeroSerie();
 
-            TypeLunette type = Fabricateur.validateSerial(numeroSerie);
-            boolean valide   = type != null;
-
-            // Double vérification : le serial doit aussi avoir été produit
+            TypeLunette type      = Fabricateur.validateSerial(numeroSerie);
+            boolean valide        = type != null;
             boolean connuLocalement = tousLesSerials.contains(numeroSerie);
 
             Message rep = new Message();
@@ -126,10 +135,8 @@ public class OrderHandler {
             rep.setNumeroSerie(numeroSerie);
             rep.setValide(valide && connuLocalement);
             rep.setStatut("OK");
-
-            if (valide && connuLocalement) {
+            if (valide && connuLocalement)
                 rep.setTypeLunette(type.name());
-            }
 
             return rep;
 
@@ -138,6 +145,18 @@ public class OrderHandler {
             return creerErreur(null, null, "Vérification impossible : " + e.getMessage());
         }
     }
+
+    /**
+     * Retourne une copie immuable de tous les serials connus.
+     * Utilisé par ServeurMqtt au démarrage pour publier l'état initial.
+     */
+    public List<String> getTousLesSerials() {
+        return List.copyOf(tousLesSerials);
+    }
+
+    // ─────────────────────────────────────
+    // Helper
+    // ─────────────────────────────────────
 
     private Message creerErreur(String clientId, String commandeId, String texte) {
         Message m = new Message();

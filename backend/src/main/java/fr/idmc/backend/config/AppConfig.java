@@ -12,6 +12,8 @@ public class AppConfig {
     // Topics
     public static final String TOPIC_COMMANDES    = "lunettes/commandes";
     public static final String TOPIC_VERIFICATION = "lunettes/verification";
+    public static final String TOPIC_FABRIQUEES = "lunettes/fabriquees";
+
 
     public static String topicLivraison(String clientId) {
         return "lunettes/livraisons/" + clientId;

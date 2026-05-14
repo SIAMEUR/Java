@@ -33,7 +33,7 @@ public class ClientTest {
         System.out.println("[OK] Connecté au broker : " + BROKER_URL);
 
         // ── Tests dans l'ordre ──────────────────────────────────────────
-
+        testerAbonnementSerials(client); // TEST 0 : abbonnement a la chaine des serials
         testerCommande(client);          // TEST 1 : commande valide → remplit serialsRecus
         testerCommandeInvalide(client);  // TEST 2 : type inexistant → erreur attendue
         testerCommandeVide(client);      // TEST 3 : liste vide → erreur attendue
@@ -47,7 +47,7 @@ public class ClientTest {
     }
 
     // ══════════════════════════════════════════════════════════════════
-    // TEST 1 — Commande valide : 1 CLAUDE + 2 BANANA
+    // TEST 1 — Commande valide : 1  + 2 BANANA
     //          On stocke les serials reçus pour les tests de vérification
     // ══════════════════════════════════════════════════════════════════
 
@@ -298,5 +298,23 @@ public class ClientTest {
     private static void afficherResultat(boolean recu) {
         if (!recu) System.out.println("[!!] Timeout — pas de réponse du serveur.");
         else       System.out.println("[OK] Réponse reçue.");
+    }
+
+    private static void testerAbonnementSerials(MqttClient client) throws Exception {
+        afficherTitre("TEST 0 : Abonnement live à lunettes/serials");
+
+        // Pas de latch ici : on reste abonné pour toute la durée des tests
+        client.subscribe("lunettes/serials", 1, (topic, message) -> {
+            String reponse = new String(message.getPayload(), StandardCharsets.UTF_8);
+            Map<?, ?> rep  = mapper.readValue(reponse, Map.class);
+
+            System.out.println("\n[SERIALS UPDATE] Total : " + rep.get("total"));
+            System.out.println("                 Liste : " + rep.get("serials"));
+        });
+
+        System.out.println("     → Abonné à lunettes/serials (mises à jour automatiques)");
+
+        // Petite pause pour recevoir l'état initial retained du broker
+        Thread.sleep(1000);
     }
 }
