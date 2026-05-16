@@ -6,13 +6,14 @@
 
 <VBox alignment="CENTER" spacing="20" styleClass="root-accueil"
       xmlns="http://javafx.com/javafx"
-      xmlns:fx="http://javafx.com/fxml">
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="fr.idmc.frontend.controller.AccueilController">
 
     <Label text="Lunettes connectées" styleClass="titre"/>
     <Label text="Commandez vos lunettes en quelques clics" styleClass="sous-titre"/>
 
-    <Button text="Commander" styleClass="btn-principal"/>
-    <Button text="Mes lunettes" styleClass="btn-secondaire"/>
-    <Button text="Vérifier un numéro" styleClass="btn-secondaire"/>
+    <Button text="Commander" styleClass="btn-principal" onAction="#allerCommande"/>
+    <Button text="Mes lunettes" styleClass="btn-secondaire" onAction="#allerLivraison"/>
+    <Button text="Vérifier un numéro" styleClass="btn-secondaire" onAction="#allerVerification"/>
 
 </VBox>

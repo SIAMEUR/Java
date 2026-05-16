@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Spinner?>
+
+<VBox alignment="TOP_CENTER" spacing="20" styleClass="root-ecran"
+      xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="fr.idmc.frontend.controller.CommandeController">
+
+    <Label text="Nouvelle commande" styleClass="titre"/>
+    <Label text="Choisissez les modèles et quantités" styleClass="sous-titre"/>
+
+    <GridPane hgap="20" vgap="15" styleClass="grille-commande">
+        <Label text="ChatGPT"  GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+        <Spinner fx:id="qtyChatgpt" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+
+        <Label text="Le Chat"  GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+        <Spinner fx:id="qtyLeChat" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+
+        <Label text="Banana"   GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+        <Spinner fx:id="qtyBanana" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+
+        <Label text="Claude"   GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+        <Spinner fx:id="qtyClaude" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+    </GridPane>
+
+    <Button text="Commander" styleClass="btn-principal" onAction="#envoyerCommande"/>
+    <Button text="Retour"    styleClass="btn-secondaire" onAction="#retourAccueil"/>
+
+    <Label fx:id="statutLabel" styleClass="statut"/>
+
+</VBox>

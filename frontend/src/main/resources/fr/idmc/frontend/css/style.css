@@ -1,4 +1,5 @@
-.root-accueil {
+/* Fond commun pour tous les ecrans */
+.root-accueil, .root-ecran {
     -fx-background-color: #1e1e2e;
     -fx-padding: 40;
 }
@@ -14,6 +15,7 @@
     -fx-text-fill: #bbbbcc;
 }
 
+/* Boutons */
 .btn-principal {
     -fx-background-color: #e74c3c;
     -fx-text-fill: white;
@@ -39,4 +41,57 @@
 
 .btn-secondaire:hover {
     -fx-background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Ecran commande : libelles et grille */
+.grille-commande {
+    -fx-alignment: CENTER;
+    -fx-padding: 10 0 10 0;
+}
+
+.grille-commande .label {
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 15px;
+}
+
+.statut {
+    -fx-text-fill: #bbbbcc;
+    -fx-font-size: 14px;
+}
+
+/* Ecran livraison : liste des serials */
+.liste-serials {
+    -fx-background-color: #2a2a3e;
+    -fx-control-inner-background: #2a2a3e;
+    -fx-text-fill: #ffffff;
+    -fx-border-color: #444466;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+}
+
+.liste-serials .list-cell {
+    -fx-background-color: #2a2a3e;
+    -fx-text-fill: #ffffff;
+    -fx-padding: 8 12;
+}
+
+.liste-serials .list-cell:filled:hover {
+    -fx-background-color: #3a3a4e;
+}
+
+.liste-serials .list-cell:filled:selected {
+    -fx-background-color: #e74c3c;
+    -fx-text-fill: #ffffff;
+}
+
+/* Champs de saisie (ecran verification) */
+.text-field {
+    -fx-background-color: #2a2a3e;
+    -fx-text-fill: #ffffff;
+    -fx-prompt-text-fill: #888899;
+    -fx-border-color: #444466;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-padding: 10 14;
+    -fx-font-size: 14px;
 }

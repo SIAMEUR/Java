@@ -36,3 +36,9 @@ build/
 
 ### Mac OS ###
 .DS_Store
+
+### Notes personnelles ###
+RAPPORT_FRONTEND_NOTES.md
+
+### Persistance Paho MQTT ###
+frontend/frontend-*-tcplocalhost*/

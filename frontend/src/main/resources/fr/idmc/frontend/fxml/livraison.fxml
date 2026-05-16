@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+
+<VBox alignment="TOP_CENTER" spacing="20" styleClass="root-ecran"
+      xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="fr.idmc.frontend.controller.LivraisonController">
+
+    <Label text="Mes lunettes" styleClass="titre"/>
+    <Label text="Numéros de série reçus de l'usine" styleClass="sous-titre"/>
+
+    <ListView fx:id="liste" prefHeight="350" prefWidth="500" styleClass="liste-serials"/>
+
+    <Button text="Retour" styleClass="btn-secondaire" onAction="#retourAccueil"/>
+
+</VBox>

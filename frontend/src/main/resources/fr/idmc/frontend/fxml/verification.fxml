@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+
+<VBox alignment="TOP_CENTER" spacing="20" styleClass="root-ecran"
+      xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="fr.idmc.frontend.controller.VerificationController">
+
+    <Label text="Vérifier un numéro" styleClass="titre"/>
+    <Label text="Saisissez un numéro de série pour vérifier son authenticité" styleClass="sous-titre"/>
+
+    <HBox alignment="CENTER" spacing="10">
+        <TextField fx:id="champSerial" promptText="Numéro de série" prefWidth="320"/>
+        <Button text="Vérifier" styleClass="btn-principal" onAction="#verifier"/>
+    </HBox>
+
+    <Label fx:id="resultatLabel" styleClass="statut"/>
+
+    <Button text="Retour" styleClass="btn-secondaire" onAction="#retourAccueil"/>
+
+</VBox>
