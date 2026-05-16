@@ -42,3 +42,6 @@ RAPPORT_FRONTEND_NOTES.md
 
 ### Persistance Paho MQTT ###
 frontend/frontend-*-tcplocalhost*/
+
+### Fichiers generes par maven-shade-plugin ###
+**/dependency-reduced-pom.xml

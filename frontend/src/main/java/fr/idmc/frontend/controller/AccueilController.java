@@ -2,13 +2,21 @@ package fr.idmc.frontend.controller;
 
 import fr.idmc.frontend.navigation.Navigation;
 import javafx.fxml.FXML;
+import javafx.scene.control.Label;
 
 public class AccueilController {
 
     private final Navigation nav;
 
+    @FXML private Label footerInfo;
+
     public AccueilController(Navigation nav) {
         this.nav = nav;
+    }
+
+    @FXML
+    private void initialize() {
+        footerInfo.setText("Session : " + nav.getClientId());
     }
 
     @FXML

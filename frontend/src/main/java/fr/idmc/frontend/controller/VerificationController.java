@@ -13,6 +13,7 @@ public class VerificationController {
 
     @FXML private TextField champSerial;
     @FXML private Label resultatLabel;
+    @FXML private Label footerInfo;
 
     public VerificationController(Navigation nav) {
         this.nav = nav;
@@ -20,6 +21,7 @@ public class VerificationController {
 
     @FXML
     private void initialize() {
+        footerInfo.setText("Session : " + nav.getClientId());
         // Binding unidirectionnel : tout changement de la property se reflete dans le label.
         // La property est ecrite a la fois ici (clic Verifier) et par le handler MQTT (App).
         resultatLabel.textProperty().bind(nav.resultatVerificationProperty());

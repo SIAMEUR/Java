@@ -1,97 +1,238 @@
-/* Fond commun pour tous les ecrans */
+/* Typographie par defaut */
+* {
+    -fx-font-family: "Segoe UI", "Arial", sans-serif;
+}
+
+/* Fond principal commun aux ecrans */
 .root-accueil, .root-ecran {
-    -fx-background-color: #1e1e2e;
-    -fx-padding: 40;
+    -fx-background-color: #0f172a;
+}
+
+/* Bandeau du haut : titre + indicateur de statut */
+.header {
+    -fx-background-color: #1e293b;
+    -fx-padding: 18 32;
+    -fx-border-color: #334155;
+    -fx-border-width: 0 0 1 0;
+}
+
+.header-titre {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #f1f5f9;
+}
+
+.header-statut {
+    -fx-font-size: 12px;
+    -fx-text-fill: #10b981;
+}
+
+/* Zone de contenu */
+.contenu {
+    -fx-padding: 30 40;
 }
 
 .titre {
-    -fx-font-size: 36px;
+    -fx-font-size: 28px;
     -fx-font-weight: bold;
-    -fx-text-fill: #ffffff;
+    -fx-text-fill: #f1f5f9;
 }
 
 .sous-titre {
-    -fx-font-size: 16px;
-    -fx-text-fill: #bbbbcc;
+    -fx-font-size: 14px;
+    -fx-text-fill: #94a3b8;
+}
+
+/* Carte interieure pour grouper du contenu */
+.carte {
+    -fx-background-color: #1e293b;
+    -fx-padding: 24;
+    -fx-background-radius: 6;
+    -fx-border-color: #334155;
+    -fx-border-width: 1;
+    -fx-border-radius: 6;
+}
+
+/* Pied de page */
+.footer {
+    -fx-background-color: #1e293b;
+    -fx-padding: 12 32;
+    -fx-border-color: #334155;
+    -fx-border-width: 1 0 0 0;
+}
+
+.footer-info {
+    -fx-text-fill: #64748b;
+    -fx-font-size: 11px;
+    -fx-font-family: "Consolas", "Courier New", monospace;
 }
 
 /* Boutons */
 .btn-principal {
-    -fx-background-color: #e74c3c;
-    -fx-text-fill: white;
-    -fx-font-size: 16px;
-    -fx-padding: 12 32;
-    -fx-background-radius: 6;
+    -fx-background-color: #2563eb;
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-padding: 10 28;
+    -fx-background-radius: 5;
     -fx-cursor: hand;
 }
 
 .btn-principal:hover {
-    -fx-background-color: #c0392b;
+    -fx-background-color: #1d4ed8;
+}
+
+.btn-principal:disabled {
+    -fx-background-color: #475569;
+    -fx-text-fill: #94a3b8;
+    -fx-opacity: 1;
+    -fx-cursor: default;
 }
 
 .btn-secondaire {
     -fx-background-color: transparent;
-    -fx-text-fill: #ffffff;
-    -fx-border-color: #ffffff;
-    -fx-border-radius: 6;
-    -fx-background-radius: 6;
-    -fx-padding: 10 28;
+    -fx-text-fill: #f1f5f9;
+    -fx-border-color: #475569;
+    -fx-border-width: 1;
+    -fx-border-radius: 5;
+    -fx-background-radius: 5;
+    -fx-padding: 9 22;
     -fx-cursor: hand;
 }
 
 .btn-secondaire:hover {
-    -fx-background-color: rgba(255, 255, 255, 0.1);
+    -fx-background-color: #334155;
+    -fx-border-color: #64748b;
 }
 
-/* Ecran commande : libelles et grille */
+/* Grille de commande : libelles + spinners */
 .grille-commande {
     -fx-alignment: CENTER;
-    -fx-padding: 10 0 10 0;
+    -fx-hgap: 30;
+    -fx-vgap: 14;
 }
 
 .grille-commande .label {
-    -fx-text-fill: #ffffff;
-    -fx-font-size: 15px;
+    -fx-text-fill: #f1f5f9;
+    -fx-font-size: 14px;
+}
+
+.libelle-type {
+    -fx-text-fill: #f1f5f9;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+}
+
+.libelle-description {
+    -fx-text-fill: #94a3b8;
+    -fx-font-size: 12px;
 }
 
 .statut {
-    -fx-text-fill: #bbbbcc;
-    -fx-font-size: 14px;
+    -fx-text-fill: #94a3b8;
+    -fx-font-size: 13px;
+    -fx-font-style: italic;
 }
 
-/* Ecran livraison : liste des serials */
+/* ListView des serials */
 .liste-serials {
-    -fx-background-color: #2a2a3e;
-    -fx-control-inner-background: #2a2a3e;
-    -fx-text-fill: #ffffff;
-    -fx-border-color: #444466;
-    -fx-border-radius: 6;
-    -fx-background-radius: 6;
+    -fx-background-color: #0f172a;
+    -fx-control-inner-background: #0f172a;
+    -fx-border-color: #334155;
+    -fx-border-width: 1;
+    -fx-border-radius: 5;
+    -fx-background-radius: 5;
 }
 
 .liste-serials .list-cell {
-    -fx-background-color: #2a2a3e;
-    -fx-text-fill: #ffffff;
-    -fx-padding: 8 12;
+    -fx-background-color: #0f172a;
+    -fx-text-fill: #f1f5f9;
+    -fx-padding: 10 14;
+    -fx-font-family: "Consolas", "Courier New", monospace;
+    -fx-font-size: 13px;
 }
 
 .liste-serials .list-cell:filled:hover {
-    -fx-background-color: #3a3a4e;
+    -fx-background-color: #1e293b;
 }
 
 .liste-serials .list-cell:filled:selected {
-    -fx-background-color: #e74c3c;
+    -fx-background-color: #2563eb;
     -fx-text-fill: #ffffff;
 }
 
-/* Champs de saisie (ecran verification) */
+.compteur {
+    -fx-text-fill: #64748b;
+    -fx-font-size: 12px;
+}
+
+/* TextField (ecran verification) */
 .text-field {
-    -fx-background-color: #2a2a3e;
-    -fx-text-fill: #ffffff;
-    -fx-prompt-text-fill: #888899;
-    -fx-border-color: #444466;
-    -fx-border-radius: 6;
-    -fx-background-radius: 6;
-    -fx-padding: 10 14;
+    -fx-background-color: #0f172a;
+    -fx-text-fill: #f1f5f9;
+    -fx-prompt-text-fill: #475569;
+    -fx-border-color: #334155;
+    -fx-border-width: 1;
+    -fx-border-radius: 5;
+    -fx-background-radius: 5;
+    -fx-padding: 9 14;
     -fx-font-size: 14px;
+    -fx-font-family: "Consolas", "Courier New", monospace;
+}
+
+.text-field:focused {
+    -fx-border-color: #2563eb;
+}
+
+/* Spinner */
+.spinner {
+    -fx-background-color: #0f172a;
+    -fx-border-color: #334155;
+    -fx-border-width: 1;
+    -fx-border-radius: 5;
+    -fx-background-radius: 5;
+}
+
+.spinner .text-field {
+    -fx-background-color: transparent;
+    -fx-border-width: 0;
+    -fx-padding: 6 10;
+}
+
+.spinner .increment-arrow-button,
+.spinner .decrement-arrow-button {
+    -fx-background-color: #334155;
+    -fx-padding: 4 6;
+}
+
+.spinner .increment-arrow-button:hover,
+.spinner .decrement-arrow-button:hover {
+    -fx-background-color: #475569;
+}
+
+.spinner .increment-arrow,
+.spinner .decrement-arrow {
+    -fx-background-color: #f1f5f9;
+}
+
+/* Spinner d'attente */
+.progress-indicator .percentage {
+    -fx-fill: transparent;
+}
+
+.progress-indicator {
+    -fx-progress-color: #2563eb;
+}
+
+/* Resultat de verification */
+.resultat-valide {
+    -fx-text-fill: #10b981;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+}
+
+.resultat-invalide {
+    -fx-text-fill: #ef4444;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
 }

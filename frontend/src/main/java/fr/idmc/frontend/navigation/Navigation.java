@@ -1,6 +1,8 @@
 package fr.idmc.frontend.navigation;
 
 import fr.idmc.frontend.service.MqttService;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.collections.FXCollections;
@@ -30,6 +32,11 @@ public class Navigation {
     // dessus : ecrire dans la property met a jour l'UI sans appel direct.
     private final StringProperty resultatVerification = new SimpleStringProperty("");
 
+    // True entre l'envoi d'une commande et la reception de la livraison.
+    // Sert a bloquer le bouton Commander (contrainte sujet : une seule commande par client)
+    // et a afficher "Fabrication en cours" sur l'ecran Livraison.
+    private final BooleanProperty commandeEnCours = new SimpleBooleanProperty(false);
+
     public Navigation(Stage stage, MqttService mqtt, String clientId) {
         this.stage = stage;
         this.mqtt = mqtt;
@@ -40,6 +47,7 @@ public class Navigation {
     public String getClientId()                             { return clientId; }
     public ObservableList<String> getNumerosSerieRecus()    { return numerosSerieRecus; }
     public StringProperty resultatVerificationProperty()    { return resultatVerification; }
+    public BooleanProperty commandeEnCoursProperty()        { return commandeEnCours; }
 
     public void aller(String fxmlChemin) {
         try {
@@ -57,7 +65,7 @@ public class Navigation {
             });
 
             Parent root = loader.load();
-            Scene scene = new Scene(root, 800, 600);
+            Scene scene = new Scene(root, 900, 650);
             scene.getStylesheets().add(
                 getClass().getResource("/fr/idmc/frontend/css/style.css").toExternalForm()
             );

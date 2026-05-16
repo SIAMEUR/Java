@@ -30,7 +30,10 @@ public class App extends Application {
             // toucher a la liste observable (qui est lue par l'UI).
             mqtt.abonner(FrontendConfig.topicLivraison(FrontendConfig.CLIENT_ID), dto -> {
                 if (dto.getNumerosSerie() == null) return;
-                Platform.runLater(() -> nav.getNumerosSerieRecus().addAll(dto.getNumerosSerie()));
+                Platform.runLater(() -> {
+                    nav.getNumerosSerieRecus().addAll(dto.getNumerosSerie());
+                    nav.commandeEnCoursProperty().set(false);
+                });
             });
 
             // Reponse d'une verification : on traduit en message lisible et on l'ecrit
