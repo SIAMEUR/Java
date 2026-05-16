@@ -2,43 +2,26 @@ package fr.idmc.backend.server;
 
 import bernard_flou.Fabricateur.TypeLunette;
 import fr.idmc.backend.serialization.LunettesException;
-import fr.idmc.backend.serialization.Message;
 
-import java.util.List;
+import java.util.Map;
 
 public class ValidateurCommande {
 
-    public void valider(Message msg) throws LunettesException {
+    public void valider(Map<TypeLunette, Integer> lunettes) throws LunettesException {
 
-        // 1. clientId obligatoire
-        if (msg.getClientId() == null || msg.getClientId().isBlank())
-            throw LunettesException.clientIdManquant();
+        // Quantité totale strictement supérieure à 0
+        int total = lunettes.values().stream().mapToInt(Integer::intValue).sum();
+        if (total <= 0)
+            throw new LunettesException("TOTAL_INVALIDE",
+                    "La quantité totale doit être strictement supérieure à 0");
 
-        // 2. liste lunettes obligatoire et non vide
-        List<Message.LunettesItem> lunettes = msg.getLunettes();
-        if (lunettes == null || lunettes.isEmpty())
-            throw new LunettesException("LUNETTES_MANQUANTES",
-                    "La liste de lunettes est vide ou absente");
-
-        // 3. chaque ligne
-        for (Message.LunettesItem item : lunettes) {
-
-            // type null
-            if (item.getType() == null || item.getType().isBlank())
-                throw new LunettesException("TYPE_MANQUANT",
-                        "Un type de lunette est absent");
-
-            // type valide dans l'enum TypeLunette ?
-            // Les vrais types sont : CHATGPT, LE_CHAT, BANANA, CLAUDE
-            try {
-                TypeLunette.valueOf(item.getType().toUpperCase());
-            } catch (IllegalArgumentException e) {
-                throw LunettesException.typeInconnu(item.getType());
-            }
-
-            // quantité entre 1 et 100
-            if (item.getQuantity() <= 0 || item.getQuantity() > 100)
-                throw LunettesException.quantiteInvalide(item.getQuantity());
+        // Chaque quantité entre 0 (inclus) et 10 (exclu)
+        for (Map.Entry<TypeLunette, Integer> entry : lunettes.entrySet()) {
+            int qte = entry.getValue();
+            if (qte < 0 || qte >= 10)
+                throw new LunettesException("QUANTITE_INVALIDE",
+                        "Quantité invalide pour " + entry.getKey()
+                                + " : " + qte + " (attendu : 0 ≤ qté < 10)");
         }
     }
 }

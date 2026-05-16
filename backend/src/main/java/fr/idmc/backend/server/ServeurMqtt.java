@@ -1,14 +1,14 @@
 package fr.idmc.backend.server;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import bernard_flou.Fabricateur;
 import fr.idmc.backend.config.AppConfig;
-import fr.idmc.backend.serialization.Message;
+import fr.idmc.backend.serialization.MessageSerializer;
 import org.eclipse.paho.client.mqttv3.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
-import java.util.List;
+import java.util.Map;
 
 public class ServeurMqtt implements MqttCallback {
 
@@ -16,14 +16,14 @@ public class ServeurMqtt implements MqttCallback {
 
     private MqttClient client;
     private final OrderHandler orderHandler;
-    private final ObjectMapper mapper = new ObjectMapper();
 
     public ServeurMqtt(OrderHandler orderHandler) {
         this.orderHandler = orderHandler;
-        this.orderHandler.setSerialsUpdated(this::publierListeSerials);
     }
 
-
+    // ─────────────────────────────────────
+    // Démarrage
+    // ─────────────────────────────────────
 
     public void demarrer() throws MqttException {
         client = new MqttClient(AppConfig.BROKER_URL, AppConfig.CLIENT_ID);
@@ -37,12 +37,14 @@ public class ServeurMqtt implements MqttCallback {
         client.connect(opts);
         log.info("Connecté au broker : {}", AppConfig.BROKER_URL);
 
-        client.subscribe(AppConfig.TOPIC_COMMANDES,    AppConfig.QOS);
-        client.subscribe(AppConfig.TOPIC_VERIFICATION, AppConfig.QOS);
-        log.info("Abonné aux topics commandes et vérification");
+        // Wildcard + pour recevoir toutes les commandes : orders/abc, orders/xyz...
+        client.subscribe(AppConfig.TOPIC_ORDERS_WILDCARD,  AppConfig.QOS);
+        // Wildcard + pour recevoir toutes les vérifications : serials/CL-ABC/check
+        client.subscribe(AppConfig.TOPIC_SERIALS_WILDCARD, AppConfig.QOS);
 
-        // Publication de l'état initial (liste vide au démarrage)
-        publierListeSerials(orderHandler.getTousLesSerials());
+        log.info("Abonné à : {} et {}",
+                AppConfig.TOPIC_ORDERS_WILDCARD,
+                AppConfig.TOPIC_SERIALS_WILDCARD);
     }
 
     public void arreter() throws MqttException {
@@ -52,70 +54,100 @@ public class ServeurMqtt implements MqttCallback {
         }
     }
 
-    //Réception et routage
+    // ─────────────────────────────────────
+    // Réception et routage
+    // ─────────────────────────────────────
 
     @Override
     public void messageArrived(String topic, MqttMessage message) {
         String payload = new String(message.getPayload(), StandardCharsets.UTF_8);
         log.debug("Reçu sur [{}] : {}", topic, payload);
 
-        switch (topic) {
-            case AppConfig.TOPIC_COMMANDES ->
-                    orderHandler.traiterCommande(payload)
-                            .thenAccept(rep -> {
-                                if (rep.getClientId() == null) {
-                                    log.warn("Réponse sans clientId, publication impossible.");
-                                    return;
-                                }
-                                publier(AppConfig.topicLivraison(rep.getClientId()), rep, false);
-                            });
+        if (topic.startsWith("orders/")) {
+            // Extrait le commandeId depuis le topic "orders/{commandeId}"
+            String commandeId = topic.split("/")[1];
+            gererCommande(commandeId, payload);
 
-            case AppConfig.TOPIC_VERIFICATION -> {
-                Message rep = orderHandler.traiterVerification(payload);
-                if (rep.getClientId() == null) {
-                    log.warn("Vérification sans clientId, publication impossible.");
-                    return;
-                }
-                publier(AppConfig.topicVerificationResult(rep.getClientId()), rep, false);
-            }
+        } else if (topic.startsWith("serials/") && topic.endsWith("/check")) {
+            // Extrait le serial depuis "serials/{serial}/check"
+            String[] parts = topic.split("/");
+            // Le serial peut contenir des '/' → on recompose
+            // Format garanti : serials/SERIAL/check → parts[1] = serial
+            String serial = parts[1];
+            gererVerification(serial);
 
-            default -> log.warn("Topic non géré : {}", topic);
+        } else {
+            log.warn("Topic non géré : {}", topic);
         }
     }
 
+    // ─────────────────────────────────────
+    // Gestion d'une commande
+    // ─────────────────────────────────────
 
-    private void publierListeSerials(List<String> serials) {
-        try {
-            java.util.Map<String, Object> payload = java.util.Map.of(
-                    "serials", serials,
-                    "total",   serials.size()
-            );
-            byte[] json = mapper.writeValueAsBytes(payload);
+    private void gererCommande(String commandeId, String payload) {
 
-            MqttMessage msg = new MqttMessage(json);
-            msg.setQos(AppConfig.QOS);
-            msg.setRetained(true);  // retained : dernier message conservé par le broker
-            client.publish(AppConfig.TOPIC_FABRIQUEES, msg);
+        // Publie validated ou cancelled selon le résultat de la validation
+        // puis lance la fabrication de manière asynchrone
+        orderHandler.traiterCommande(commandeId, payload,
 
-            log.info("Liste serials publiée sur [{}] : {} serial(s)",
-                    AppConfig.TOPIC_FABRIQUEES, serials.size());
-        } catch (Exception e) {
-            log.error("Erreur publication liste serials", e);
-        }
+                // onValidated : la commande est valide
+                () -> {
+                    publier(AppConfig.topicValidated(commandeId), "");
+                    publierStatus(commandeId, "EN_ATTENTE");
+                },
+
+                // onCancelled : la commande est invalide
+                reason -> publier(AppConfig.topicCancelled(commandeId),
+                        MessageSerializer.serializeErreur(commandeId, reason)),
+
+                // onStatus : mise à jour de progression (bonus)
+                status -> publierStatus(commandeId, status),
+
+                // onDelivery : livraison finale
+                lunettes -> publier(AppConfig.topicDelivery(commandeId),
+                        MessageSerializer.serializeDelivery(commandeId, lunettes)),
+
+                // onError : erreur pendant la fabrication
+                reason -> publier(AppConfig.topicError(commandeId),
+                        MessageSerializer.serializeErreur(commandeId, reason))
+        );
     }
 
+    // ─────────────────────────────────────
+    // Gestion d'une vérification de serial
+    // ─────────────────────────────────────
 
+    private void gererVerification(String serial) {
+        // validateSerial retourne le TypeLunette si valide, null sinon
+        Fabricateur.TypeLunette type = Fabricateur.validateSerial(serial);
+        String result = (type != null) ? type.name() : "invalid";
 
-    private void publier(String topic, Object objet, boolean retained) {
+        String payload = MessageSerializer.serializeSerialResult(serial, result);
+        publier(AppConfig.topicSerialResult(serial), payload);
+
+        log.info("Vérification serial [{}] → {}", serial, result);
+    }
+
+    // ─────────────────────────────────────
+    // Helpers de publication
+    // ─────────────────────────────────────
+
+    private void publierStatus(String commandeId, String status) {
+        publier(AppConfig.topicStatus(commandeId),
+                MessageSerializer.serializeStatus(commandeId, status));
+    }
+
+    private void publier(String topic, String payload) {
         try {
-            byte[] json = mapper.writeValueAsBytes(objet);
-            MqttMessage msg = new MqttMessage(json);
+            MqttMessage msg = new MqttMessage(
+                    payload.getBytes(StandardCharsets.UTF_8));
             msg.setQos(AppConfig.QOS);
-            msg.setRetained(retained);
+            msg.setRetained(false);
             client.publish(topic, msg);
-            log.debug("Publié sur [{}]", topic);
-        } catch (Exception e) {
-            log.error("Erreur lors de la publication sur [{}]", topic, e);
+            log.debug("Publié sur [{}] : {}", topic, payload);
+        } catch (MqttException e) {
+            log.error("Erreur publication sur [{}]", topic, e);
         }
     }
 
