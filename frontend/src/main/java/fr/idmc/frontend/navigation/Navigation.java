@@ -10,6 +10,7 @@ import javafx.collections.ObservableList;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Label;
 import javafx.stage.Stage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,6 +54,20 @@ public class Navigation {
     public StringProperty resultatVerificationProperty()    { return resultatVerification; }
     public BooleanProperty commandeEnCoursProperty()        { return commandeEnCours; }
     public StringProperty statutCommandeProperty()          { return statutCommande; }
+
+    // Helper utilise par chaque controller pour lier son label de header
+    // a l'etat de connexion du broker. Affiche "Connecte" en vert ou
+    // "Deconnecte" en rouge selon la property connecte du MqttService.
+    public void bindStatutConnexion(Label label) {
+        Runnable maj = () -> {
+            boolean ok = mqtt.connecteProperty().get();
+            label.getStyleClass().removeAll("statut-connecte", "statut-deconnecte");
+            label.getStyleClass().add(ok ? "statut-connecte" : "statut-deconnecte");
+            label.setText(ok ? "● Connecte" : "● Deconnecte");
+        };
+        maj.run();
+        mqtt.connecteProperty().addListener((obs, avant, apres) -> maj.run());
+    }
 
     public void aller(String fxmlChemin) {
         try {

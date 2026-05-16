@@ -24,7 +24,14 @@
 
 .header-statut {
     -fx-font-size: 12px;
+}
+
+.statut-connecte {
     -fx-text-fill: #10b981;
+}
+
+.statut-deconnecte {
+    -fx-text-fill: #ef4444;
 }
 
 /* Zone de contenu */
