@@ -26,7 +26,7 @@ public class ServeurMqtt implements MqttCallback {
     // ─────────────────────────────────────
 
     public void demarrer() throws MqttException {
-        client = new MqttClient(AppConfig.BROKER_URL, AppConfig.CLIENT_ID);
+        client = new MqttClient(AppConfig.BROKER_URL(), AppConfig.CLIENT_ID());
         client.setCallback(this);
 
         MqttConnectOptions opts = new MqttConnectOptions();
@@ -35,16 +35,10 @@ public class ServeurMqtt implements MqttCallback {
         opts.setKeepAliveInterval(30);
 
         client.connect(opts);
-        log.info("Connecté au broker : {}", AppConfig.BROKER_URL);
+        log.info("Connecté au broker : {}", AppConfig.BROKER_URL());
 
-        // Wildcard + pour recevoir toutes les commandes : orders/abc, orders/xyz...
-        client.subscribe(AppConfig.TOPIC_ORDERS_WILDCARD,  AppConfig.QOS);
-        // Wildcard + pour recevoir toutes les vérifications : serials/CL-ABC/check
-        client.subscribe(AppConfig.TOPIC_SERIALS_WILDCARD, AppConfig.QOS);
-
-        log.info("Abonné à : {} et {}",
-                AppConfig.TOPIC_ORDERS_WILDCARD,
-                AppConfig.TOPIC_SERIALS_WILDCARD);
+        client.subscribe(AppConfig.TOPIC_ORDERS_WILDCARD(),  AppConfig.QOS());
+        client.subscribe(AppConfig.TOPIC_SERIALS_WILDCARD(), AppConfig.QOS());
     }
 
     public void arreter() throws MqttException {
@@ -142,7 +136,7 @@ public class ServeurMqtt implements MqttCallback {
         try {
             MqttMessage msg = new MqttMessage(
                     payload.getBytes(StandardCharsets.UTF_8));
-            msg.setQos(AppConfig.QOS);
+            msg.setQos(AppConfig.QOS());
             msg.setRetained(false);
             client.publish(topic, msg);
             log.debug("Publié sur [{}] : {}", topic, payload);

@@ -3,11 +3,6 @@ package fr.idmc.backend.server;
 import bernard_flou.Fabricateur;
 
 import fr.idmc.factory.Usine;
-import fr.idmc.factory.IUsine;
-import org.eclipse.paho.client.mqttv3.MqttClient;
-import org.eclipse.paho.client.mqttv3.MqttException;
-import org.eclipse.paho.client.mqttv3.MqttMessage;
-import bernard_flou.Fabricateur;
 import fr.idmc.backend.config.AppConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,7 +23,7 @@ public class ServeurApplication {
 
         //demmarage
         serveur.demarrer();
-        log.info("Serveur prêt — broker : {}", AppConfig.BROKER_URL);
+        log.info("Serveur prêt — broker : {}", AppConfig.BROKER_URL());
 
 
 
