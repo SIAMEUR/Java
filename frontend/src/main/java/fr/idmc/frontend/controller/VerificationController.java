@@ -1,11 +1,14 @@
 package fr.idmc.frontend.controller;
 
 import fr.idmc.frontend.config.FrontendConfig;
-import fr.idmc.frontend.model.MessageDto;
 import fr.idmc.frontend.navigation.Navigation;
+import fr.idmc.frontend.serialization.MessageSerializer;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
+
+import java.util.Map;
 
 public class VerificationController {
 
@@ -22,8 +25,9 @@ public class VerificationController {
     @FXML
     private void initialize() {
         footerInfo.setText("Session : " + nav.getClientId());
-        // Binding unidirectionnel : tout changement de la property se reflete dans le label.
-        // La property est ecrite a la fois ici (clic Verifier) et par le handler MQTT (App).
+        // Le label resultat suit la property partagee dans Navigation.
+        // Cette property est mise a jour soit par cette classe (au clic Verifier)
+        // soit par le handler MQTT enregistre dans verifier().
         resultatLabel.textProperty().bind(nav.resultatVerificationProperty());
     }
 
@@ -35,12 +39,28 @@ public class VerificationController {
             return;
         }
 
-        MessageDto dto = new MessageDto();
-        dto.setClientId(nav.getClientId());
-        dto.setNumeroSerie(serial);
+        String topicResult = FrontendConfig.topicSerialResult(serial);
 
         try {
-            nav.getMqtt().publier(FrontendConfig.TOPIC_VERIFICATION, dto);
+            // On s'abonne au topic de reponse pour CE serial avant de publier.
+            nav.getMqtt().abonner(topicResult, payload -> {
+                Map<String, String> champs = MessageSerializer.parser(payload);
+                String result = champs.getOrDefault("RESULT", "");
+
+                String texte = result.equals("invalid")
+                        ? "Numero inconnu ou contrefait."
+                        : "Valide. Type : " + result;
+
+                Platform.runLater(() -> nav.resultatVerificationProperty().set(texte));
+
+                // Une fois la reponse recue on se desabonne : le verifie est ponctuel,
+                // on n'a plus besoin d'ecouter ce topic.
+                nav.getMqtt().desabonner(topicResult);
+            });
+
+            // Publication sur serials/{serial}/check. Le backend lit le serial
+            // directement depuis le topic donc le payload peut etre vide.
+            nav.getMqtt().publier(FrontendConfig.topicSerialCheck(serial), "");
             nav.resultatVerificationProperty().set("Verification en cours...");
         } catch (Exception e) {
             nav.resultatVerificationProperty().set("Echec : " + e.getMessage());

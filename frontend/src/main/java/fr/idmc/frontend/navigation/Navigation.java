@@ -37,6 +37,10 @@ public class Navigation {
     // et a afficher "Fabrication en cours" sur l'ecran Livraison.
     private final BooleanProperty commandeEnCours = new SimpleBooleanProperty(false);
 
+    // Statut texte de la derniere commande (alimente par les messages MQTT
+    // validated / status / delivery / cancelled / error). Lu par LivraisonController.
+    private final StringProperty statutCommande = new SimpleStringProperty("");
+
     public Navigation(Stage stage, MqttService mqtt, String clientId) {
         this.stage = stage;
         this.mqtt = mqtt;
@@ -48,6 +52,7 @@ public class Navigation {
     public ObservableList<String> getNumerosSerieRecus()    { return numerosSerieRecus; }
     public StringProperty resultatVerificationProperty()    { return resultatVerification; }
     public BooleanProperty commandeEnCoursProperty()        { return commandeEnCours; }
+    public StringProperty statutCommandeProperty()          { return statutCommande; }
 
     public void aller(String fxmlChemin) {
         try {

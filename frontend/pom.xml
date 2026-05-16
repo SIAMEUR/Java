@@ -13,7 +13,6 @@
 
     <properties>
         <javafx.version>21.0.4</javafx.version>
-        <jackson.version>2.17.2</jackson.version>
         <main.class>fr.idmc.frontend.Launcher</main.class>
     </properties>
 
@@ -32,12 +31,6 @@
         <dependency>
             <groupId>org.eclipse.paho</groupId>
             <artifactId>org.eclipse.paho.client.mqttv3</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>${jackson.version}</version>
         </dependency>
 
         <dependency>

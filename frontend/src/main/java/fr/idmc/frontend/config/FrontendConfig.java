@@ -29,24 +29,38 @@ public final class FrontendConfig {
     public static final String CLIENT_ID =
             get("mqtt.client.id.prefix", "frontend-") + System.currentTimeMillis();
 
-    public static final String TOPIC_COMMANDES =
-            get("mqtt.topic.commandes", "lunettes/commandes");
+    // Prefixes : on concatene le commandeId ou le serial pour faire le topic final.
+    private static final String PREFIX_ORDERS =
+            get("mqtt.topic.orders.prefix", "orders/");
+    private static final String PREFIX_SERIALS =
+            get("mqtt.topic.serials.prefix", "serials/");
 
-    public static final String TOPIC_VERIFICATION =
-            get("mqtt.topic.verification", "lunettes/verification");
-
-    private static final String TOPIC_LIVRAISON_PREFIX =
-            get("mqtt.topic.livraison.prefix", "lunettes/livraisons/");
-
-    private static final String TOPIC_VERIF_RESULT_PREFIX =
-            get("mqtt.topic.verification.result.prefix", "lunettes/verification/result/");
-
-    public static String topicLivraison(String clientId) {
-        return TOPIC_LIVRAISON_PREFIX + clientId;
+    // Topics commandes (cf README du prof : orders/{commandeId}/...)
+    public static String topicOrder(String commandeId) {
+        return PREFIX_ORDERS + commandeId;
+    }
+    public static String topicValidated(String commandeId) {
+        return PREFIX_ORDERS + commandeId + "/validated";
+    }
+    public static String topicCancelled(String commandeId) {
+        return PREFIX_ORDERS + commandeId + "/cancelled";
+    }
+    public static String topicDelivery(String commandeId) {
+        return PREFIX_ORDERS + commandeId + "/delivery";
+    }
+    public static String topicError(String commandeId) {
+        return PREFIX_ORDERS + commandeId + "/error";
+    }
+    public static String topicStatus(String commandeId) {
+        return PREFIX_ORDERS + commandeId + "/status";
     }
 
-    public static String topicVerificationResult(String clientId) {
-        return TOPIC_VERIF_RESULT_PREFIX + clientId;
+    // Topics verification (cf README : serials/{serial}/check, serials/{serial})
+    public static String topicSerialCheck(String serial) {
+        return PREFIX_SERIALS + serial + "/check";
+    }
+    public static String topicSerialResult(String serial) {
+        return PREFIX_SERIALS + serial;
     }
 
     private static Properties chargerProperties() {
