@@ -1,27 +1,51 @@
 package fr.idmc.backend.config;
 
-public class AppConfig {
+public final class AppConfig {
 
-    // MQTT
     public static final String BROKER_URL = System.getenv()
             .getOrDefault("MQTT_BROKER_URL", "tcp://localhost:1883");
 
     public static final String CLIENT_ID = "usine-serveur";
-    public static final int QOS = 1;
+    public static final int    QOS       = 1;
 
-    // Topics
-    public static final String TOPIC_COMMANDES    = "lunettes/commandes";
-    public static final String TOPIC_VERIFICATION = "lunettes/verification";
-    public static final String TOPIC_FABRIQUEES = "lunettes/fabriquees";
+    // ── Topics entrants (client → usine) ──────────────────────────
 
+    // Le client publie sur orders/{commandeId}
+    // On s'abonne avec le wildcard + pour recevoir toutes les commandes
+    public static final String TOPIC_ORDERS_WILDCARD  = "orders/+";
 
-    public static String topicLivraison(String clientId) {
-        return "lunettes/livraisons/" + clientId;
+    // Le client publie sur serials/{serial}/check pour vérifier un serial
+    public static final String TOPIC_SERIALS_WILDCARD = "serials/+/check";
+
+    // ── Topics sortants (usine → client) ──────────────────────────
+
+    // orders/{commandeId}/validated  ← commande valide
+    public static String topicValidated(String commandeId) {
+        return "orders/" + commandeId + "/validated";
     }
-    public static String topicVerificationResult(String clientId) {
-        return "lunettes/verification/result/" + clientId;
+
+    // orders/{commandeId}/cancelled  ← commande invalide
+    public static String topicCancelled(String commandeId) {
+        return "orders/" + commandeId + "/cancelled";
     }
 
-    // nombre de threads de l'Usine
-    public static final int POOL_SIZE = 10;
+    // orders/{commandeId}/delivery  ← livraison finale
+    public static String topicDelivery(String commandeId) {
+        return "orders/" + commandeId + "/delivery";
+    }
+
+    // orders/{commandeId}/error  ← erreur pendant le traitement
+    public static String topicError(String commandeId) {
+        return "orders/" + commandeId + "/error";
+    }
+
+    // orders/{commandeId}/status  ← progression (bonus)
+    public static String topicStatus(String commandeId) {
+        return "orders/" + commandeId + "/status";
+    }
+
+    // serials/{serial}  ← résultat de vérification
+    public static String topicSerialResult(String serial) {
+        return "serials/" + serial;
+    }
 }

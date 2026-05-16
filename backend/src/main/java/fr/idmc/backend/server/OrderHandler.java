@@ -1,22 +1,17 @@
 package fr.idmc.backend.server;
 
-import bernard_flou.Fabricateur;
+import bernard_flou.Fabricateur.Lunette;
 import bernard_flou.Fabricateur.TypeLunette;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import fr.idmc.backend.serialization.Message;
-import fr.idmc.factory.Usine;
+import fr.idmc.backend.serialization.MessageSerializer;
+import fr.idmc.backend.serialization.MessageSerializer.LunetteItem;
+import fr.idmc.usine.Usine;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class OrderHandler {
 
@@ -24,146 +19,82 @@ public class OrderHandler {
 
     private final Usine usine;
     private final ValidateurCommande validateur;
-    private final ObjectMapper mapper = new ObjectMapper();
-
-
-    // Stockage thread-safe des serials produits
-    private final Set<String> tousLesSerials =
-            Collections.newSetFromMap(new ConcurrentHashMap<>());
-    //les liste a jour
-    private Consumer<List<String>> serialsUpdated;
 
     public OrderHandler(Usine usine, ValidateurCommande validateur) {
         this.usine      = usine;
         this.validateur = validateur;
     }
 
-    public void setSerialsUpdated(Consumer<List<String>> callback) {
-        this.serialsUpdated = callback;
-    }
-
-    // Traitement d'une commande
-
-    public CompletableFuture<Message> traiterCommande(String payloadJson) {
-
-        // 1. Parse JSON → Message
-        Message entrant;
-        try {
-            entrant = mapper.readValue(payloadJson, Message.class);
-        } catch (JsonProcessingException e) {
-            log.error("JSON invalide : {}", e.getMessage());
-            return CompletableFuture.completedFuture(
-                    creerErreur(null, null, "JSON invalide : " + e.getMessage())
-            );
-        }
-
-        // 2. Validation
-        try {
-            validateur.valider(entrant);
-        } catch (Exception e) {
-            log.warn("Commande invalide : {}", e.getMessage());
-            return CompletableFuture.completedFuture(
-                    creerErreur(entrant.getClientId(), entrant.getCommandeId(), e.getMessage())
-            );
-        }
-
-        // 3. Message → Commande interne
-        Commande commande;
-        try {
-            commande = Commande.depuisMessage(entrant);
-        } catch (IllegalArgumentException e) {
-            log.warn("Type de lunette inconnu : {}", e.getMessage());
-            return CompletableFuture.completedFuture(
-                    creerErreur(entrant.getClientId(), entrant.getCommandeId(),
-                            "Type inconnu : " + e.getMessage())
-            );
-        }
-
-        // 4. usine.produire() est BLOQUANTE → thread séparé
-        return CompletableFuture.supplyAsync(() ->
-                        usine.produire(commande.getLunettes())
-                )
-                .thenApply(lunettes -> {
-                    List<String> nouveauxSerials = lunettes.stream()
-                            .map(lunette -> lunette.serial)
-                            .collect(Collectors.toList());
-
-
-                    tousLesSerials.addAll(nouveauxSerials);
-
-                    if (serialsUpdated != null) {
-                        serialsUpdated.accept(List.copyOf(tousLesSerials));
-                    }
-
-                    log.info("{} nouveaux serials ajoutés. Total : {}",
-                            nouveauxSerials.size(), tousLesSerials.size());
-
-                    Message rep = new Message();
-                    rep.setClientId(commande.getClientId());
-                    rep.setCommandeId(commande.getCommandeId());
-                    rep.setNumerosSerie(nouveauxSerials);  // serials de CETTE commande
-                    rep.setStatut("OK");
-                    return rep;
-                })
-                .exceptionally(ex -> {
-                    Throwable cause = ex.getCause() != null ? ex.getCause() : ex;
-                    log.error("Fabrication échouée pour {} : {}",
-                            commande.getCommandeId(), cause.getMessage());
-                    return creerErreur(
-                            commande.getClientId(),
-                            commande.getCommandeId(),
-                            "Fabrication échouée : " + cause.getMessage()
-                    );
-                });
-    }
-
-    // ─────────────────────────────────────
-    // Vérification d'un numéro de série
-    // ─────────────────────────────────────
-
-    public Message traiterVerification(String payloadJson) {
-        try {
-            Message entrant   = mapper.readValue(payloadJson, Message.class);
-            String numeroSerie = entrant.getNumeroSerie();
-
-            TypeLunette type      = Fabricateur.validateSerial(numeroSerie);
-            boolean valide        = type != null;
-            boolean connuLocalement = tousLesSerials.contains(numeroSerie);
-
-            Message rep = new Message();
-            rep.setClientId(entrant.getClientId());
-            rep.setNumeroSerie(numeroSerie);
-            rep.setValide(valide && connuLocalement);
-            rep.setStatut("OK");
-            if (valide && connuLocalement)
-                rep.setTypeLunette(type.name());
-
-            return rep;
-
-        } catch (Exception e) {
-            log.error("Erreur vérification", e);
-            return creerErreur(null, null, "Vérification impossible : " + e.getMessage());
-        }
-    }
-
     /**
-     * Retourne une copie immuable de tous les serials connus.
-     * Utilisé par ServeurMqtt au démarrage pour publier l'état initial.
+     * Traite une commande reçue sur orders/{commandeId}.
+     * Les callbacks permettent à ServeurMqtt de publier sur les bons topics
+     * sans que OrderHandler connaisse MQTT.
      */
-    public List<String> getTousLesSerials() {
-        return List.copyOf(tousLesSerials);
-    }
+    public void traiterCommande(
+            String commandeId,
+            String payload,
+            Runnable                    onValidated,
+            Consumer<String>            onCancelled,
+            Consumer<String>            onStatus,
+            Consumer<List<LunetteItem>> onDelivery,
+            Consumer<String>            onError) {
 
-    // ─────────────────────────────────────
-    // Helper
-    // ─────────────────────────────────────
+        // 1. Parse le payload custom
+        Map<String, String> champs = MessageSerializer.parse(payload);
+        String lunettesRaw = champs.get("LUNETTES");
 
-    private Message creerErreur(String clientId, String commandeId, String texte) {
-        Message m = new Message();
-        m.setClientId(clientId);
-        m.setCommandeId(commandeId);
-        m.setStatut("ERREUR");
-        m.setErreur(texte);
-        return m;
+        if (lunettesRaw == null || lunettesRaw.isBlank()) {
+            onCancelled.accept("Champ LUNETTES manquant dans le payload");
+            return;
+        }
+
+        Map<String, Integer> lunettesStr =
+                MessageSerializer.parseLunettesCommande(lunettesRaw);
+
+        // 2. Conversion String → TypeLunette
+        Map<TypeLunette, Integer> lunettes = new LinkedHashMap<>();
+        try {
+            for (Map.Entry<String, Integer> e : lunettesStr.entrySet()) {
+                TypeLunette type = TypeLunette.valueOf(e.getKey().toUpperCase());
+                lunettes.put(type, e.getValue());
+            }
+        } catch (IllegalArgumentException e) {
+            onCancelled.accept("Type inconnu : " + e.getMessage());
+            return;
+        }
+
+        // 3. Validation métier
+        try {
+            validateur.valider(lunettes);
+        } catch (Exception e) {
+            onCancelled.accept(e.getMessage());
+            return;
+        }
+
+        // 4. Commande valide → notifie le client
+        onValidated.run();
+        onStatus.accept("EN_FABRICATION");
+
+        // 5. Fabrication asynchrone (usine.produire est bloquante)
+        new Thread(() -> {
+            try {
+                Commande commande = new Commande(commandeId, lunettes);
+                List<Lunette> produites = usine.produire(commande.getLunettes());
+
+                // Conversion Lunette → LunetteItem
+                List<LunetteItem> items = produites.stream()
+                        .map(l -> new LunetteItem(l.type.name(), l.serial))
+                        .collect(Collectors.toList());
+
+                onStatus.accept("LIVRE");
+                onDelivery.accept(items);
+
+                log.info("Commande {} livrée : {} lunettes", commandeId, items.size());
+
+            } catch (Exception e) {
+                log.error("Erreur fabrication commande {} : {}", commandeId, e.getMessage());
+                onError.accept("Erreur fabrication : " + e.getMessage());
+            }
+        }, "fabrication-" + commandeId).start();
     }
 }
