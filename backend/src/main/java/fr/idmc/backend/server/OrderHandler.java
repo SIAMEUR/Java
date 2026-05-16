@@ -4,7 +4,7 @@ import bernard_flou.Fabricateur.Lunette;
 import bernard_flou.Fabricateur.TypeLunette;
 import fr.idmc.backend.serialization.MessageSerializer;
 import fr.idmc.backend.serialization.MessageSerializer.LunetteItem;
-import fr.idmc.usine.Usine;
+import fr.idmc.factory.Usine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

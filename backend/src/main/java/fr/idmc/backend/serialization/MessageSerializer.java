@@ -15,13 +15,14 @@ import java.util.Map;
  *
  * Exemple commande :
  *   CMD_ID=abc-123|LUNETTES=CLAUDE:2,BANANA:1|TOTAL=3
+ *   -------------------------------------
  *
  * Exemple livraison :
  *   CMD_ID=abc-123|LUNETTES=CLAUDE:CL-ABC-FF,BANANA:BA-XYZ-AA
- *
+ *------------------------------------------------------------
  * Exemple erreur :
  *   CMD_ID=abc-123|REASON=Type inconnu : SOLAIRE
- *
+ *--------------------------------------------------------
  * Exemple serial check :
  *   SERIAL=CL-ABC-FF|RESULT=CLAUDE
  *   SERIAL=XX-000-00|RESULT=invalid
@@ -37,11 +38,11 @@ public class MessageSerializer {
     // SÉRIALISATION
     // ──────────────────────────────────────────────────────────────
 
-    /**
-     * Sérialise une commande entrante.
-     * Entrée  : {CLAUDE=2, BANANA=1}
-     * Sortie  : CMD_ID=abc|LUNETTES=CLAUDE:2,BANANA:1|TOTAL=3
-     */
+
+     //Sérialise une commande entrante.
+     // Entrée  : {CLAUDE=2, BANANA=1}
+     //Sortie  : CMD_ID=abc|LUNETTES=CLAUDE:2,BANANA:1|TOTAL=3
+
     public static String serializeCommande(String commandeId,
                                            Map<String, Integer> lunettes) {
         StringBuilder sb = new StringBuilder();
@@ -62,10 +63,10 @@ public class MessageSerializer {
         return sb.toString();
     }
 
-    /**
-     * Sérialise une livraison.
-     * Entrée  : [{type=CLAUDE, serial=CL-ABC-FF}, ...]
-     * Sortie  : CMD_ID=abc|LUNETTES=CLAUDE:CL-ABC-FF,BANANA:BA-XYZ-AA
+
+     /*Sérialise une livraison.*/
+     /*Entrée  : [{type=CLAUDE, serial=CL-ABC-FF}, ...]
+       Sortie  : CMD_ID=abc|LUNETTES=CLAUDE:CL-ABC-FF,BANANA:BA-XYZ-AA
      */
     public static String serializeDelivery(String commandeId,
                                            List<LunetteItem> lunettes) {
