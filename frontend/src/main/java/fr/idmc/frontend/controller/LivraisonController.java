@@ -19,6 +19,7 @@ public class LivraisonController {
     @FXML private Label statutLabel;
     @FXML private Label compteurLabel;
     @FXML private Label footerInfo;
+    @FXML private Label statutConnexion;
     @FXML private ListView<String> liste;
     @FXML private ProgressIndicator spinner;
 
@@ -29,6 +30,7 @@ public class LivraisonController {
     @FXML
     private void initialize() {
         footerInfo.setText("Session : " + nav.getClientId());
+        nav.bindStatutConnexion(statutConnexion);
         liste.setItems(nav.getNumerosSerieRecus());
 
         // Spinner visible uniquement pendant l'attente. managedProperty pour qu'il

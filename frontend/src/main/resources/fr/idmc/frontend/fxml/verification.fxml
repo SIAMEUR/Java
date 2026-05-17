@@ -16,7 +16,7 @@
     <HBox styleClass="header" alignment="CENTER_LEFT">
         <Label text="Lunettes connectées IDMC" styleClass="header-titre"/>
         <Region HBox.hgrow="ALWAYS"/>
-        <Label text="● Connecté" styleClass="header-statut"/>
+        <Label fx:id="statutConnexion" styleClass="header-statut"/>
     </HBox>
 
     <VBox spacing="18" styleClass="contenu" VBox.vgrow="ALWAYS">
@@ -27,7 +27,7 @@
             <Label text="Numéro de série" styleClass="libelle-type"/>
             <HBox spacing="10">
                 <TextField fx:id="champSerial" promptText="ex: CH-XXXXXX-XXXXXXXX" HBox.hgrow="ALWAYS"/>
-                <Button text="Vérifier" styleClass="btn-principal" onAction="#verifier"/>
+                <Button fx:id="btnVerifier" text="Vérifier" styleClass="btn-principal" onAction="#verifier"/>
             </HBox>
             <Label fx:id="resultatLabel" styleClass="statut"/>
         </VBox>

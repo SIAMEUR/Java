@@ -9,6 +9,7 @@ public class AccueilController {
     private final Navigation nav;
 
     @FXML private Label footerInfo;
+    @FXML private Label statutConnexion;
 
     public AccueilController(Navigation nav) {
         this.nav = nav;
@@ -17,6 +18,7 @@ public class AccueilController {
     @FXML
     private void initialize() {
         footerInfo.setText("Session : " + nav.getClientId());
+        nav.bindStatutConnexion(statutConnexion);
     }
 
     @FXML

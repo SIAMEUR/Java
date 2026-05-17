@@ -17,7 +17,7 @@
     <HBox styleClass="header" alignment="CENTER_LEFT">
         <Label text="Lunettes connectées IDMC" styleClass="header-titre"/>
         <Region HBox.hgrow="ALWAYS"/>
-        <Label text="● Connecté" styleClass="header-statut"/>
+        <Label fx:id="statutConnexion" styleClass="header-statut"/>
     </HBox>
 
     <VBox spacing="18" styleClass="contenu" VBox.vgrow="ALWAYS">
