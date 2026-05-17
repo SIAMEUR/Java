@@ -62,9 +62,11 @@ Voir le rapport pour la spécification complète.
 
 ## Industrialisation
 
-Workflows GitHub Actions dans `.github/workflows/` :
-- build du projet sur chaque push/PR
-- les jars frontend et backend attachés à chaque release
+Deux workflows GitHub Actions dans `.github/workflows/` :
+- **`ci.yml`** — build complet du projet sur chaque push/PR pour vérifier qu'on
+  ne casse rien
+- **`release.yml`** — sur création d'une release GitHub, build les deux fat jars
+  (frontend + backend) et les attache automatiquement à la release
 
 L'usine est publiée sur GitHub Packages depuis un dépôt dédié,
 [`SIAMEUR/mavenUsineIDMC`](https://github.com/SIAMEUR/mavenUsineIDMC), avec son
