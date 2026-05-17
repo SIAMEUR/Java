@@ -3,18 +3,22 @@ package fr.idmc.frontend.controller;
 import fr.idmc.frontend.config.FrontendConfig;
 import fr.idmc.frontend.navigation.Navigation;
 import fr.idmc.frontend.serialization.MessageSerializer;
+import javafx.animation.PauseTransition;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.SpinnerValueFactory;
+import javafx.util.Duration;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 
 public class CommandeController {
+
+    private static final int TIMEOUT_SECONDES = 30;
 
     private final Navigation nav;
 
@@ -24,6 +28,7 @@ public class CommandeController {
     @FXML private Spinner<Integer> qtyClaude;
     @FXML private Label statutLabel;
     @FXML private Label footerInfo;
+    @FXML private Label statutConnexion;
     @FXML private Button btnCommander;
 
     public CommandeController(Navigation nav) {
@@ -33,6 +38,7 @@ public class CommandeController {
     @FXML
     private void initialize() {
         footerInfo.setText("Session : " + nav.getClientId());
+        nav.bindStatutConnexion(statutConnexion);
 
         // Bornes 0-9 imposees par le sujet (entre 0 inclus et 10 exclu).
         qtyChatgpt.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 9, 0));
@@ -41,7 +47,11 @@ public class CommandeController {
         qtyClaude.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 9, 0));
 
         // Une seule commande a la fois : bouton grise tant qu'une est en cours.
-        btnCommander.disableProperty().bind(nav.commandeEnCoursProperty());
+        // Et grise aussi quand le broker n'est pas joignable.
+        btnCommander.disableProperty().bind(
+                nav.commandeEnCoursProperty()
+                        .or(nav.getMqtt().connecteProperty().not()));
+
         if (nav.commandeEnCoursProperty().get()) {
             statutLabel.setText("Une commande est deja en cours de fabrication.");
         }
@@ -49,6 +59,11 @@ public class CommandeController {
 
     @FXML
     private void envoyerCommande() {
+        if (!nav.getMqtt().connecteProperty().get()) {
+            statutLabel.setText("Pas de connexion au broker, reessayez plus tard.");
+            return;
+        }
+
         Map<String, Integer> lunettes = new LinkedHashMap<>();
         ajouterSiPositif(lunettes, "CHATGPT", qtyChatgpt.getValue());
         ajouterSiPositif(lunettes, "LE_CHAT", qtyLeChat.getValue());
@@ -60,24 +75,30 @@ public class CommandeController {
             return;
         }
 
-        // Identifiant unique de la commande, qui devient une partie du topic MQTT.
         String commandeId = UUID.randomUUID().toString();
-
-        // Construction du payload au format maison.
         String payload = MessageSerializer.serialiserCommande(commandeId, lunettes);
 
-        try {
-            // On s'abonne aux topics de reponse AVANT de publier, sinon
-            // la reponse du backend pourrait arriver avant qu'on ecoute.
-            abonnerAuxReponses(commandeId);
+        // Timeout : si on n'a pas recu delivery/cancelled/error apres N secondes,
+        // on considere que le backend ne repond pas et on sort de l'etat d'attente.
+        PauseTransition timeout = new PauseTransition(Duration.seconds(TIMEOUT_SECONDES));
+        timeout.setOnFinished(e -> {
+            if (nav.commandeEnCoursProperty().get()) {
+                nav.statutCommandeProperty().set("Timeout : aucune reponse du backend apres "
+                        + TIMEOUT_SECONDES + "s.");
+                nav.commandeEnCoursProperty().set(false);
+                cleanup(commandeId);
+            }
+        });
 
+        try {
+            abonnerAuxReponses(commandeId, timeout);
             nav.getMqtt().publier(FrontendConfig.topicOrder(commandeId), payload);
             nav.commandeEnCoursProperty().set(true);
             nav.statutCommandeProperty().set("Commande envoyee, en attente de validation...");
-
-            // On bascule direct sur l'ecran de suivi.
+            timeout.play();
             nav.aller("/fr/idmc/frontend/fxml/livraison.fxml");
         } catch (Exception e) {
+            timeout.stop();
             statutLabel.setText("Echec de l'envoi : " + e.getMessage());
         }
     }
@@ -88,9 +109,8 @@ public class CommandeController {
     }
 
     // Abonne aux 5 topics de reponse pour CETTE commande.
-    // Chaque handler s'execute dans le thread Paho donc on bascule sur le thread UI
-    // avec Platform.runLater avant de toucher aux property et a la liste observable.
-    private void abonnerAuxReponses(String commandeId) throws Exception {
+    // Les handlers terminaux (delivery, cancelled, error) annulent le timeout.
+    private void abonnerAuxReponses(String commandeId, PauseTransition timeout) throws Exception {
 
         // validated : le backend a accepte la commande, payload vide
         nav.getMqtt().abonner(FrontendConfig.topicValidated(commandeId), payload ->
@@ -111,6 +131,7 @@ public class CommandeController {
             Map<String, String> champs = MessageSerializer.parser(payload);
             String raison = champs.getOrDefault("REASON", "raison inconnue");
             Platform.runLater(() -> {
+                timeout.stop();
                 nav.statutCommandeProperty().set("Commande annulee : " + raison);
                 nav.commandeEnCoursProperty().set(false);
             });
@@ -122,6 +143,7 @@ public class CommandeController {
             Map<String, String> champs = MessageSerializer.parser(payload);
             String raison = champs.getOrDefault("REASON", "erreur inconnue");
             Platform.runLater(() -> {
+                timeout.stop();
                 nav.statutCommandeProperty().set("Erreur de fabrication : " + raison);
                 nav.commandeEnCoursProperty().set(false);
             });
@@ -135,6 +157,7 @@ public class CommandeController {
             var recues = MessageSerializer.parserLivraison(valeur);
 
             Platform.runLater(() -> {
+                timeout.stop();
                 for (var r : recues) {
                     nav.getNumerosSerieRecus().add(r.serial);
                 }
@@ -146,7 +169,7 @@ public class CommandeController {
     }
 
     // On se desabonne des 5 topics quand la commande est terminee (delivery,
-    // cancelled ou error). Evite que la map de handlers grossisse a l'infini.
+    // cancelled, error ou timeout). Evite que la map de handlers grossisse a l'infini.
     private void cleanup(String commandeId) {
         nav.getMqtt().desabonner(FrontendConfig.topicValidated(commandeId));
         nav.getMqtt().desabonner(FrontendConfig.topicStatus(commandeId));

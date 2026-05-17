@@ -17,7 +17,7 @@
     <HBox styleClass="header" alignment="CENTER_LEFT">
         <Label text="Lunettes connectées IDMC" styleClass="header-titre"/>
         <Region HBox.hgrow="ALWAYS"/>
-        <Label text="● Connecté" styleClass="header-statut"/>
+        <Label fx:id="statutConnexion" styleClass="header-statut"/>
     </HBox>
 
     <VBox spacing="14" styleClass="contenu" VBox.vgrow="ALWAYS">
@@ -30,6 +30,8 @@
 
         <HBox alignment="CENTER_LEFT">
             <Label fx:id="compteurLabel" styleClass="compteur"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Label text="Double-clic sur un numéro pour le copier" styleClass="compteur"/>
         </HBox>
 
         <ListView fx:id="liste" styleClass="liste-serials" VBox.vgrow="ALWAYS"/>
