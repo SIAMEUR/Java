@@ -65,4 +65,8 @@ Voir le rapport pour la spécification complète.
 Workflows GitHub Actions dans `.github/workflows/` :
 - build du projet sur chaque push/PR
 - les jars frontend et backend attachés à chaque release
-- publication de l'usine sur GitHub Packages à chaque release
+
+L'usine est publiée sur GitHub Packages depuis un dépôt dédié,
+[`SIAMEUR/mavenUsineIDMC`](https://github.com/SIAMEUR/mavenUsineIDMC), avec son
+propre workflow qui se déclenche à la création d'une release sur ce dépôt
+(conformément à l'exigence du sujet).

@@ -30,6 +30,8 @@
 
         <HBox alignment="CENTER_LEFT">
             <Label fx:id="compteurLabel" styleClass="compteur"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Label text="Double-clic sur un numéro pour le copier" styleClass="compteur"/>
         </HBox>
 
         <ListView fx:id="liste" styleClass="liste-serials" VBox.vgrow="ALWAYS"/>
