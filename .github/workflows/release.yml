@@ -1,28 +1,29 @@
 name: Release
 
-# A chaque release GitHub :
-#   - le backend est build sur Linux (pas de natives donc cross-platform)
-#   - le frontend est build sur 3 OS car JavaFX embarque des natives
-#     specifiques a chaque plateforme (Direct3D sur Windows, Cocoa sur Mac,
-#     OpenGL sur Linux). Resultat : 3 fat jars frontend dans la release.
+# A chaque release GitHub, build les deux fat jars livrables et les attache
+# automatiquement a la release.
+#
+# Le frontend embarque les natives JavaFX des 3 OS (declares explicitement
+# dans frontend/pom.xml via les classifiers win/linux/mac), donc un seul jar
+# suffit pour tourner sur Windows, Linux et macOS.
 on:
   release:
     types: [created]
   workflow_dispatch:
 
 jobs:
-
-  # ── Backend : un seul jar, build sur Linux ──
-  backend:
+  release:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      packages: read
+      packages: read   # pour telecharger com.github.siameur:usine depuis GitHub Packages
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout du code
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-java@v4
+      - name: Installation du JDK 24
+        uses: actions/setup-java@v4
         with:
           java-version: '24'
           distribution: 'temurin'
@@ -33,7 +34,6 @@ jobs:
           BERNARD_PAT: ${{ secrets.BERNARD_PAT }}
           GH_USER: ${{ github.actor }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        shell: bash
         run: |
           mkdir -p ~/.m2
           cat > ~/.m2/settings.xml << EOF
@@ -53,92 +53,26 @@ jobs:
           </settings>
           EOF
 
-      - name: Build du fat jar backend
-        run: mvn -B -pl backend -am package -DskipTests
-
-      - name: Upload sur la release GitHub
-        if: github.event_name == 'release'
-        uses: softprops/action-gh-release@v2
-        with:
-          files: backend/target/serveur-fabrique.jar
-
-      - name: Artefact telechargeable (lancement manuel)
-        if: github.event_name == 'workflow_dispatch'
-        uses: actions/upload-artifact@v4
-        with:
-          name: serveur-fabrique
-          path: backend/target/serveur-fabrique.jar
-
-  # ── Frontend : matrice 3 OS pour avoir les bonnes natives JavaFX ──
-  frontend:
-    strategy:
-      matrix:
-        include:
-          - os: ubuntu-latest
-            suffix: linux
-          - os: windows-latest
-            suffix: windows
-          - os: macos-latest
-            suffix: macos
-    runs-on: ${{ matrix.os }}
-    permissions:
-      contents: write
-      packages: read
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-java@v4
-        with:
-          java-version: '24'
-          distribution: 'temurin'
-          cache: 'maven'
-
-      - name: Configuration des credentials Maven
-        env:
-          BERNARD_PAT: ${{ secrets.BERNARD_PAT }}
-          GH_USER: ${{ github.actor }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        shell: bash
-        run: |
-          mkdir -p ~/.m2
-          cat > ~/.m2/settings.xml << EOF
-          <settings>
-            <servers>
-              <server>
-                <id>github-bernard</id>
-                <username>le-prof-de-raizo</username>
-                <password>${BERNARD_PAT}</password>
-              </server>
-              <server>
-                <id>github</id>
-                <username>${GH_USER}</username>
-                <password>${GH_TOKEN}</password>
-              </server>
-            </servers>
-          </settings>
-          EOF
-
-      - name: Build du fat jar frontend
-        working-directory: frontend
-        shell: bash
+      - name: Build des fat jars
         run: mvn -B package -DskipTests
 
-      - name: Renommage du jar avec le suffixe OS
-        shell: bash
+      - name: Regroupement des livrables
         run: |
           mkdir -p release
-          cp frontend/target/frontend-*-SNAPSHOT.jar release/lunettes-connectees-frontend-${{ matrix.suffix }}.jar
+          cp frontend/target/frontend-*-SNAPSHOT.jar release/lunettes-connectees-frontend.jar
+          cp backend/target/serveur-fabrique.jar release/serveur-fabrique.jar
 
       - name: Upload sur la release GitHub
         if: github.event_name == 'release'
         uses: softprops/action-gh-release@v2
         with:
-          files: release/lunettes-connectees-frontend-${{ matrix.suffix }}.jar
+          files: |
+            release/lunettes-connectees-frontend.jar
+            release/serveur-fabrique.jar
 
-      - name: Artefact telechargeable (lancement manuel)
+      - name: Artefacts telechargeables (lancement manuel)
         if: github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@v4
         with:
-          name: lunettes-connectees-frontend-${{ matrix.suffix }}
-          path: release/lunettes-connectees-frontend-${{ matrix.suffix }}.jar
+          name: jars-livrables
+          path: release/*.jar

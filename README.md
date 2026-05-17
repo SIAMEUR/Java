@@ -22,15 +22,15 @@ Détails dans le rapport PDF joint au rendu.
 ## Lancement
 
 Depuis la dernière release GitHub, télécharger :
-- `serveur-fabrique.jar` (backend, cross-platform)
-- `lunettes-connectees-frontend-{linux|windows|macos}.jar` (frontend, choisir
-  selon votre OS — JavaFX embarque des natives spécifiques à chaque plateforme)
+- `serveur-fabrique.jar`
+- `lunettes-connectees-frontend.jar`
 
-Puis dans deux terminaux :
+Les deux jars sont cross-platform (le frontend embarque les natives JavaFX des
+trois OS). Puis dans deux terminaux :
 
 ```bash
 java -jar serveur-fabrique.jar
-java -jar lunettes-connectees-frontend-windows.jar    # exemple sur Windows
+java -jar lunettes-connectees-frontend.jar
 ```
 
 Le backend lit `config.properties` à côté du jar s'il existe, sinon utilise les
