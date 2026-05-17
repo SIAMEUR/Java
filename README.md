@@ -25,7 +25,8 @@ Depuis la dernière release GitHub, télécharger :
 - `serveur-fabrique.jar`
 - `lunettes-connectees-frontend.jar`
 
-Puis dans deux terminaux :
+Les deux jars sont cross-platform (le frontend embarque les natives JavaFX des
+trois OS). Puis dans deux terminaux :
 
 ```bash
 java -jar serveur-fabrique.jar

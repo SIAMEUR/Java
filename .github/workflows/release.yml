@@ -1,9 +1,11 @@
 name: Release
 
-# A chaque release GitHub, build les deux fat jars livrables
-# (frontend + backend) et les attache automatiquement a la release.
-# Egalement declenchable manuellement pour test (les jars sortent en
-# artefacts telechargeables).
+# A chaque release GitHub, build les deux fat jars livrables et les attache
+# automatiquement a la release.
+#
+# Le frontend embarque les natives JavaFX des 3 OS (declares explicitement
+# dans frontend/pom.xml via les classifiers win/linux/mac), donc un seul jar
+# suffit pour tourner sur Windows, Linux et macOS.
 on:
   release:
     types: [created]
@@ -54,7 +56,7 @@ jobs:
       - name: Build des fat jars
         run: mvn -B package -DskipTests
 
-      - name: Renommage et regroupement des livrables
+      - name: Regroupement des livrables
         run: |
           mkdir -p release
           cp frontend/target/frontend-*-SNAPSHOT.jar release/lunettes-connectees-frontend.jar
